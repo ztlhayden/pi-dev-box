@@ -16,6 +16,18 @@ bash bootstrap.sh
 
 The script is idempotent: every step checks whether its work is already done, so it is safe to re-run after any change.
 
+### What the script leaves to you
+
+A few steps involve credentials or details that are kept out of this repo, so they stay manual. The script skips the steps that depend on them and says so; do these, then run it again.
+
+| Step | How | What waits on it |
+|---|---|---|
+| Authorise your laptop's SSH key | Set it when imaging the drive, so the first login already uses a key | Key-only SSH is skipped until a key is authorised |
+| Set a password for your user | `sudo passwd $USER` | The sudo password step, which would otherwise lock sudo for good |
+| List the networks allowed to SSH in | One CIDR per line in `~/.config/pi-dev-box/ssh-allowed-subnets` | The firewall |
+| Add the machine's new key to GitHub | The script prints the public key; add it under Settings → SSH and GPG keys, and remove the old machine's key | Pushing to GitHub |
+| Log in to Claude Code | Run `claude` and follow the browser login | Using Claude Code |
+
 ## What the script does
 
 | Step | What | Why this way |
