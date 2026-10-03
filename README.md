@@ -31,12 +31,14 @@ Still to come: Claude Code with a permission allowlist, and hardening (key-only 
 
 ## What is in the repo
 
+`bootstrap.sh` sits at the root. Everything under `home/` is managed by chezmoi and copied into the home folder; the one-line `.chezmoiroot` file tells chezmoi to look only there, which leaves the rest of the repo free for scripts and documentation.
+
 | File | Lands at | Purpose |
 |---|---|---|
-| `dot_bash_aliases` | `~/.bash_aliases` | Turns on mise in interactive shells. Ubuntu's stock `.bashrc` already loads this file, so `.bashrc` is left alone. |
-| `dot_bash_profile` | `~/.bash_profile` | Puts mise-managed tools on `PATH` for programs that never open an interactive shell, such as the VS Code server |
-| `dot_gitconfig` | `~/.gitconfig` | Commit identity, and GitHub logins over HTTPS through `gh` |
-| `dot_config/mise/config.toml` | `~/.config/mise/config.toml` | Global fallback tool versions |
+| `home/dot_bash_aliases` | `~/.bash_aliases` | Turns on mise in interactive shells. Ubuntu's stock `.bashrc` already loads this file, so `.bashrc` is left alone. |
+| `home/dot_bash_profile` | `~/.bash_profile` | Puts mise-managed tools on `PATH` for programs that never open an interactive shell, such as the VS Code server |
+| `home/dot_gitconfig` | `~/.gitconfig` | Commit identity, and GitHub logins over HTTPS through `gh` |
+| `home/dot_config/mise/config.toml` | `~/.config/mise/config.toml` | Global fallback tool versions |
 
 Project-level config (ESLint, Prettier, Vitest, editor extensions, Node version) is deliberately not here. It belongs in each project's repository so it travels with the code.
 
