@@ -166,6 +166,83 @@ claude_code() {
   warn "run 'claude' once to log in"
 }
 
+# SSH is allowed only from the subnets in this file (one CIDR per line). The file stays on
+# the machine, which keeps network details out of the public repo.
+SUBNETS_FILE="$HOME/.config/pi-dev-box/ssh-allowed-subnets"
+
+firewall() {
+  if [[ ! -s $SUBNETS_FILE ]]; then
+    warn "no $SUBNETS_FILE; skipping firewall (add one CIDR per line, then re-run)"
+    return
+  fi
+
+  has ufw || sudo DEBIAN_FRONTEND=noninteractive apt-get install -y ufw
+
+  log "Configuring firewall"
+  sudo ufw default deny incoming >/dev/null
+  sudo ufw default allow outgoing >/dev/null
+
+  local subnet
+  while read -r subnet; do
+    [[ -z $subnet || $subnet == \#* ]] && continue
+    sudo ufw allow from "$subnet" to any port 22 proto tcp >/dev/null
+  done <"$SUBNETS_FILE"
+
+  # Rules go in before the firewall is switched on, so the current SSH session is never cut off.
+  sudo ufw --force enable >/dev/null
+}
+
+# Key-only SSH. The 10- prefix matters: sshd keeps the first value it reads, and Ubuntu's
+# 50-cloud-init.conf can set PasswordAuthentication yes.
+harden_ssh() {
+  local conf=/etc/ssh/sshd_config.d/10-hardening.conf
+  if [[ -f $conf ]]; then
+    log "SSH already hardened"
+    return
+  fi
+
+  if [[ ! -s $HOME/.ssh/authorized_keys ]]; then
+    warn "no authorized SSH key for $USER; skipping SSH hardening to avoid a lockout"
+    return
+  fi
+
+  log "Disabling SSH password and root login"
+  printf '%s\n' \
+    'PasswordAuthentication no' \
+    'KbdInteractiveAuthentication no' \
+    'PermitRootLogin no' \
+    | sudo tee "$conf" >/dev/null
+
+  if ! sudo sshd -t; then
+    sudo rm -f "$conf"
+    die "sshd rejected the new config; removed it"
+  fi
+  sudo systemctl reload ssh
+}
+
+# Ubuntu's Pi image gives the first user passwordless sudo. Override it, but only once the
+# user has a password; otherwise sudo would be locked out for good.
+require_sudo_password() {
+  local rule=/etc/sudoers.d/99-require-password
+  if sudo test -f "$rule"; then
+    log "sudo already requires a password"
+    return
+  fi
+
+  if [[ "$(sudo passwd -S "$USER" | awk '{print $2}')" != P ]]; then
+    warn "no password set for $USER; run 'sudo passwd $USER', then re-run this script"
+    return
+  fi
+
+  log "Requiring a password for sudo"
+  local tmp
+  tmp="$(mktemp)"
+  echo "$USER ALL=(ALL:ALL) ALL" >"$tmp"
+  sudo visudo -cf "$tmp" >/dev/null
+  sudo install -m 440 -o root -g root "$tmp" "$rule"
+  rm -f "$tmp"
+}
+
 main() {
   preflight
   base_packages
@@ -175,6 +252,9 @@ main() {
   dotfiles
   ssh_key
   claude_code
+  firewall
+  harden_ssh
+  require_sudo_password
   log "Done"
 }
 

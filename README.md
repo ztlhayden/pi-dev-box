@@ -28,8 +28,11 @@ The script is idempotent: every step checks whether its work is already done, so
 | Dotfiles | chezmoi applies this repo, then mise installs the tools listed in its config | Config lives here, not on the machine |
 | SSH key | Generates a GitHub key for this machine if it has none, and prints the public half | One key per machine, so any one can be revoked alone |
 | Claude Code | Anthropic's native installer | A self-updating arm64 binary that does not depend on which Node version a project pins |
+| Firewall | ufw allows SSH only from subnets listed in a file kept on the machine | Network details stay out of this public repo; skipped if the file is missing |
+| Key-only SSH | Turns off password and root login | Skipped if no SSH key is authorised, so it cannot lock the owner out |
+| sudo password | Overrides the image's passwordless sudo | An unattended process cannot become root; skipped if the user has no password yet, which would otherwise lock sudo for good |
 
-Still to come: hardening (key-only SSH, a firewall limited to the local network and VPN, automatic security updates).
+Automatic security updates are already on by default in Ubuntu Server, so the script leaves them alone.
 
 ## What is in the repo
 
