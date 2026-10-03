@@ -26,8 +26,9 @@ The script is idempotent: every step checks whether its work is already done, so
 | 1Password CLI | From 1Password's apt repository | Ubuntu does not package it |
 | mise | From mise's apt repository | One tool for Node and other CLI versions; reads each project's own version file |
 | Dotfiles | chezmoi applies this repo, then mise installs the tools listed in its config | Config lives here, not on the machine |
+| SSH key | Generates a GitHub key for this machine if it has none, and prints the public half | One key per machine, so any one can be revoked alone |
 
-Still to come: Claude Code with a permission allowlist, and hardening (key-only SSH, a firewall limited to the local network and VPN, automatic security updates).
+Still to come: installing Claude Code, and hardening (key-only SSH, a firewall limited to the local network and VPN, automatic security updates).
 
 ## What is in the repo
 
@@ -37,8 +38,10 @@ Still to come: Claude Code with a permission allowlist, and hardening (key-only 
 |---|---|---|
 | `home/dot_bash_aliases` | `~/.bash_aliases` | Turns on mise in interactive shells. Ubuntu's stock `.bashrc` already loads this file, so `.bashrc` is left alone. |
 | `home/dot_bash_profile` | `~/.bash_profile` | Puts mise-managed tools on `PATH` for programs that never open an interactive shell, such as the VS Code server |
-| `home/dot_gitconfig` | `~/.gitconfig` | Commit identity, and GitHub logins over HTTPS through `gh` |
+| `home/dot_gitconfig` | `~/.gitconfig` | Commit identity and default branch name |
 | `home/dot_config/mise/config.toml` | `~/.config/mise/config.toml` | Global fallback tool versions |
+| `home/dot_claude/CLAUDE.md` | `~/.claude/CLAUDE.md` | Rules Claude Code follows on this machine: which repositories, how to branch, commit and push |
+| `home/dot_claude/settings.json` | `~/.claude/settings.json` | Permissions enforced by Claude Code itself: routine commands pre-approved, `sudo` and force-pushes blocked |
 
 Project-level config (ESLint, Prettier, Vitest, editor extensions, Node version) is deliberately not here. It belongs in each project's repository so it travels with the code.
 
@@ -46,9 +49,16 @@ Project-level config (ESLint, Prettier, Vitest, editor extensions, Node version)
 
 **Remote-SSH, not a VS Code tunnel.** A tunnel relays through a third party's servers. Remote-SSH stays on the local network or VPN, and nothing on the Pi is reachable from the internet.
 
-**No secrets in this repo, which is why it can be public.** Anything sensitive is stored in 1Password and referenced by pointer (`op://vault/item/field`). A pointer is useless without access to the vault.
+**No secrets in this repo, which is why it can be public.** The only credential on the Pi is an SSH key generated there, and it never leaves the machine. Anything else sensitive would be stored in 1Password and referenced by pointer (`op://vault/item/field`), which is useless without access to the vault.
 
-**The Pi has its own narrow credential instead of mine.** Claude Code sometimes works on the Pi while I am not connected, so forwarding my SSH key from the laptop is not enough. The Pi instead gets a fine-grained GitHub token limited to chosen repositories, with content and pull request permissions only. It can push branches and open pull requests; it cannot change settings or touch other repositories, and it can be revoked in one click. My personal key never leaves 1Password on the laptop.
+**The Pi has its own GitHub key instead of mine.** Claude Code sometimes works on the Pi while I am not connected, so forwarding my SSH key from the laptop is not enough. Each machine generates its own key, which I add to my GitHub account. My personal key never leaves 1Password on the laptop, and a lost or retired Pi is cut off by deleting one key.
+
+**An account-wide key is a deliberate tradeoff.** The alternative was a fine-grained token limited to chosen repositories. It is narrower, but it expires, needs a repository list kept up to date, and brings a secrets manager onto the Pi. I chose the simpler key and limited the risk in other ways:
+
+- A rules file tells Claude which repositories it may touch, to branch for every change, and never to push to `main` without a specific OK.
+- Claude Code's own permission settings block `sudo`, force-pushes, and reading the key through its file tools.
+- pnpm replaces npm, because it does not run dependencies' install scripts unless approved. A malicious package is the most realistic way a key on a dev box gets stolen.
+- Nothing on the Pi is reachable from the internet.
 
 **Commits from the Pi are unsigned.** Signing through a forwarded key would fail whenever I am not connected. Leaving Pi commits unsigned keeps the "Verified" badge meaning that I made the commit myself.
 

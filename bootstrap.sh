@@ -137,6 +137,23 @@ dotfiles() {
   mise install
 }
 
+# Each machine gets its own GitHub key, so one can be revoked without affecting the others.
+# No passphrase: unattended sessions need to push.
+ssh_key() {
+  local key="$HOME/.ssh/id_ed25519"
+  if [[ -f $key ]]; then
+    log "SSH key already exists"
+    return
+  fi
+
+  log "Generating SSH key"
+  mkdir -p -m 700 "$HOME/.ssh"
+  ssh-keygen -q -t ed25519 -C "$(hostname)" -f "$key" -N ""
+
+  warn "add this public key at https://github.com/settings/keys, then remove the old machine's key:"
+  cat "$key.pub"
+}
+
 main() {
   preflight
   base_packages
@@ -144,6 +161,7 @@ main() {
   onepassword_cli
   mise_tool
   dotfiles
+  ssh_key
   log "Done"
 }
 

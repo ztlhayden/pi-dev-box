@@ -2,3 +2,4 @@
 [tools]
 node = "lts"
 chezmoi = "latest"
+pnpm = "latest"

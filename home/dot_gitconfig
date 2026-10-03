@@ -3,6 +3,3 @@
 	email = 10334147+ztlhayden@users.noreply.github.com
 [init]
 	defaultBranch = main
-[credential "https://github.com"]
-	helper =
-	helper = !gh auth git-credential
