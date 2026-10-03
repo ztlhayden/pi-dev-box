@@ -154,6 +154,18 @@ ssh_key() {
   cat "$key.pub"
 }
 
+# Native installer: a self-updating arm64 binary in ~/.local/bin, independent of the Node version.
+claude_code() {
+  if has claude || [[ -x $HOME/.local/bin/claude ]]; then
+    log "Claude Code already installed"
+    return
+  fi
+
+  log "Installing Claude Code"
+  curl -fsSL https://claude.ai/install.sh | bash
+  warn "run 'claude' once to log in"
+}
+
 main() {
   preflight
   base_packages
@@ -162,6 +174,7 @@ main() {
   mise_tool
   dotfiles
   ssh_key
+  claude_code
   log "Done"
 }
 

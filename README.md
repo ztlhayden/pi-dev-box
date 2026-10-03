@@ -27,8 +27,9 @@ The script is idempotent: every step checks whether its work is already done, so
 | mise | From mise's apt repository | One tool for Node and other CLI versions; reads each project's own version file |
 | Dotfiles | chezmoi applies this repo, then mise installs the tools listed in its config | Config lives here, not on the machine |
 | SSH key | Generates a GitHub key for this machine if it has none, and prints the public half | One key per machine, so any one can be revoked alone |
+| Claude Code | Anthropic's native installer | A self-updating arm64 binary that does not depend on which Node version a project pins |
 
-Still to come: installing Claude Code, and hardening (key-only SSH, a firewall limited to the local network and VPN, automatic security updates).
+Still to come: hardening (key-only SSH, a firewall limited to the local network and VPN, automatic security updates).
 
 ## What is in the repo
 
