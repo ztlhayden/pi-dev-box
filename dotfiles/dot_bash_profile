@@ -1,0 +1,7 @@
+# Login shells read this instead of ~/.profile, so hand over to it below.
+
+# Shims put mise-managed tools on PATH for programs that never run an interactive
+# shell (VS Code server, Claude Code).
+eval "$(mise activate bash --shims)"
+
+[ -f ~/.profile ] && . ~/.profile

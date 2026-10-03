@@ -1,0 +1,4 @@
+# Ubuntu's default ~/.bashrc sources this file, so ~/.bashrc itself stays untouched.
+
+# Switch tool versions (Node etc.) per project as the working directory changes.
+eval "$(mise activate bash)"

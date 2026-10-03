@@ -1,0 +1,4 @@
+# Global fallbacks only; each project pins its own versions in its repo.
+[tools]
+node = "lts"
+chezmoi = "latest"
