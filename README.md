@@ -27,6 +27,7 @@ A few steps involve credentials or details that are kept out of this repo, so th
 | List the networks allowed to SSH in | One CIDR per line in `~/.config/pi-dev-box/ssh-allowed-subnets` | The firewall |
 | Add the machine's new key to GitHub | The script prints the public key; add it under Settings → SSH and GPG keys, and remove the old machine's key | Pushing to GitHub |
 | Log in to Claude Code | Run `claude` and follow the browser login | Using Claude Code |
+| Connect once from the laptop | Open the Pi in VS Code with Remote-SSH, which installs the VS Code server | Installing the editor extensions |
 
 ## What the script does
 
@@ -40,6 +41,8 @@ A few steps involve credentials or details that are kept out of this repo, so th
 | Dotfiles | chezmoi applies this repo, then mise installs the tools listed in its config | Config lives here, not on the machine |
 | SSH key | Generates a GitHub key for this machine if it has none, and prints the public half | One key per machine, so any one can be revoked alone |
 | Claude Code | Anthropic's native installer | A self-updating arm64 binary that does not depend on which Node version a project pins |
+| Docker Engine | From Docker's apt repository, with the compose and buildx plugins | Ubuntu's `docker.io` package lags behind and does not include the plugins |
+| VS Code extensions | Installs any extension in the list that the VS Code server is missing | Extensions run on the Pi, so a rebuilt Pi would otherwise come back without them; skipped until Remote-SSH has connected once |
 | Firewall | ufw allows SSH only from subnets listed in a file kept on the machine | Network details stay out of this public repo; skipped if the file is missing |
 | Key-only SSH | Turns off password and root login | Skipped if no SSH key is authorised, so it cannot lock the owner out |
 | sudo password | Overrides the image's passwordless sudo | An unattended process cannot become root; skipped if the user has no password yet, which would otherwise lock sudo for good |
@@ -56,10 +59,11 @@ Automatic security updates are already on by default in Ubuntu Server, so the sc
 | `home/dot_bash_profile` | `~/.bash_profile` | Puts mise-managed tools on `PATH` for programs that never open an interactive shell, such as the VS Code server |
 | `home/dot_gitconfig` | `~/.gitconfig` | Commit identity and default branch name |
 | `home/dot_config/mise/config.toml` | `~/.config/mise/config.toml` | Global fallback tool versions |
+| `home/dot_config/pi-dev-box/vscode-extensions.txt` | `~/.config/pi-dev-box/vscode-extensions.txt` | Extensions the script installs into the VS Code server. After adding one in VS Code, add its ID here too. |
 | `home/dot_claude/CLAUDE.md` | `~/.claude/CLAUDE.md` | Rules Claude Code follows on this machine: which repositories, how to branch, commit and push |
 | `home/dot_claude/settings.json` | `~/.claude/settings.json` | Permissions enforced by Claude Code itself: routine commands pre-approved, `sudo` and force-pushes blocked |
 
-Project-level config (ESLint, Prettier, Vitest, editor extensions, Node version) is deliberately not here. It belongs in each project's repository so it travels with the code.
+Project-level config (ESLint, Prettier, Vitest, Node version) is deliberately not here. It belongs in each project's repository so it travels with the code. The extension list is the machine-wide set; a project can still recommend its own in `.vscode/extensions.json`.
 
 ## Design decisions
 
@@ -75,6 +79,8 @@ Project-level config (ESLint, Prettier, Vitest, editor extensions, Node version)
 - Claude Code's own permission settings block `sudo`, force-pushes, and reading the key through its file tools.
 - pnpm replaces npm, because it does not run dependencies' install scripts unless approved. A malicious package is the most realistic way a key on a dev box gets stolen.
 - Nothing on the Pi is reachable from the internet.
+
+**Docker stays behind `sudo`.** The user is not in the `docker` group, because anyone who can talk to the Docker daemon can become root, and Claude Code is blocked from `sudo` for exactly that reason. One thing to keep in mind: ports published by a container bypass ufw, so a published port is open to the whole local network, not only the subnets allowed to SSH in. Bind to `127.0.0.1` when that matters.
 
 **Commits from the Pi are unsigned.** Signing through a forwarded key would fail whenever I am not connected. Leaving Pi commits unsigned keeps the "Verified" badge meaning that I made the commit myself.
 

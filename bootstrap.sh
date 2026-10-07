@@ -166,6 +166,78 @@ claude_code() {
   warn "run 'claude' once to log in"
 }
 
+# Docker Engine from Docker's own apt repo, which also carries the compose and buildx plugins.
+# The user is deliberately not added to the docker group: membership is root in all but name,
+# so docker stays behind sudo like everything else.
+docker_engine() {
+  if has docker; then
+    log "Docker already installed"
+    return
+  fi
+
+  log "Installing Docker Engine"
+  local keyring=/etc/apt/keyrings/docker.asc tmp
+  tmp="$(mktemp)"
+  curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o "$tmp"
+  sudo install -D -m 644 "$tmp" "$keyring"
+  rm -f "$tmp"
+
+  # shellcheck disable=SC1091
+  . /etc/os-release
+  printf '%s\n' \
+    'Types: deb' \
+    'URIs: https://download.docker.com/linux/ubuntu' \
+    "Suites: ${UBUNTU_CODENAME:-$VERSION_CODENAME}" \
+    'Components: stable' \
+    'Architectures: arm64' \
+    "Signed-By: $keyring" \
+    | sudo tee /etc/apt/sources.list.d/docker.sources >/dev/null
+
+  sudo apt-get update
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+}
+
+# Extensions run on the Pi, inside the server that Remote-SSH installs on first connect, so
+# they can only be installed once a laptop has connected. The list comes from the dotfiles.
+EXTENSIONS_FILE="$HOME/.config/pi-dev-box/vscode-extensions.txt"
+
+vscode_extensions() {
+  if [[ ! -s $EXTENSIONS_FILE ]]; then
+    warn "no $EXTENSIONS_FILE; skipping VS Code extensions"
+    return
+  fi
+
+  # One server per VS Code release the laptop has connected with; use the newest.
+  local server="" candidate
+  for candidate in "$HOME"/.vscode-server/cli/servers/*/server/bin/code-server; do
+    [[ -x $candidate ]] || continue
+    [[ -z $server || $candidate -nt $server ]] && server=$candidate
+  done
+
+  if [[ -z $server ]]; then
+    warn "no VS Code server yet; connect once with Remote-SSH, then re-run to install extensions"
+    return
+  fi
+
+  local installed missing=() ext
+  installed="$("$server" --list-extensions)"
+  while read -r ext; do
+    [[ -z $ext || $ext == \#* ]] && continue
+    grep -qixF "$ext" <<<"$installed" || missing+=("$ext")
+  done <"$EXTENSIONS_FILE"
+
+  if ((${#missing[@]} == 0)); then
+    log "VS Code extensions already installed"
+    return
+  fi
+
+  log "Installing VS Code extensions: ${missing[*]}"
+  for ext in "${missing[@]}"; do
+    "$server" --install-extension "$ext" >/dev/null || warn "could not install $ext"
+  done
+}
+
 # SSH is allowed only from the subnets in this file (one CIDR per line). The file stays on
 # the machine, which keeps network details out of the public repo.
 SUBNETS_FILE="$HOME/.config/pi-dev-box/ssh-allowed-subnets"
@@ -252,6 +324,8 @@ main() {
   dotfiles
   ssh_key
   claude_code
+  docker_engine
+  vscode_extensions
   firewall
   harden_ssh
   require_sudo_password
