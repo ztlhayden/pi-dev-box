@@ -1,0 +1,41 @@
+# Extensions for the VS Code server on the Pi, one ID per line. bootstrap.sh installs any
+# that are missing; it never removes one. To see what is installed, run in a VS Code
+# terminal on the Pi:
+#   code --list-extensions
+anthropic.claude-code
+astro-build.astro-vscode
+atlassian.atlascode
+austenc.tailwind-docs
+biomejs.biome
+bradlc.vscode-tailwindcss
+dbaeumer.vscode-eslint
+docker.docker
+dotjoshjohnson.xml
+ecmel.vscode-html-css
+esbenp.prettier-vscode
+fivethree.vscode-svelte-snippets
+github.vscode-github-actions
+github.vscode-pull-request-github
+golang.go
+inferrinizzard.prettier-sql-vscode
+kevinrose.vsc-python-indent
+lihui.vs-color-picker
+ms-azuretools.vscode-containers
+ms-azuretools.vscode-docker
+ms-dotnettools.csdevkit
+ms-dotnettools.csharp
+ms-dotnettools.vscode-dotnet-runtime
+ms-playwright.playwright
+ms-python.debugpy
+ms-python.python
+ms-python.vscode-pylance
+ms-python.vscode-python-envs
+ms-vscode.live-server
+mtxr.sqltools
+qwtel.sqlite-viewer
+redhat.vscode-yaml
+streetsidesoftware.code-spell-checker
+svelte.svelte-vscode
+unifiedjs.vscode-mdx
+vitest.explorer
+vue.volar
