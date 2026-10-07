@@ -65,6 +65,43 @@ Automatic security updates are already on by default in Ubuntu Server, so the sc
 
 Project-level config (ESLint, Prettier, Vitest, Node version) is deliberately not here. It belongs in each project's repository so it travels with the code. The extension list is the machine-wide set; a project can still recommend its own in `.vscode/extensions.json`.
 
+## Running Claude Code from the phone or another computer
+
+`claude remote-control` makes Claude Code on the Pi available in claude.ai/code and the Claude mobile app. Running it inside tmux keeps it alive after the SSH connection closes. Start one tmux session per project folder; each can host several agents at once, so there is no need for one per agent.
+
+A coding project, where each agent started from the app gets its own git worktree so they do not edit the same files:
+
+```bash
+tmux new -d -s some-project -c ~/indy-center/some-project \
+  'claude remote-control --name some-project --spawn worktree'
+```
+
+A folder that is not a git repository, such as a to-do and notes project, where every agent works in the folder itself:
+
+```bash
+mkdir -p ~/haydens-assistant
+tmux new -d -s assistant -c ~/haydens-assistant \
+  'claude remote-control --name assistant'
+```
+
+| Part | Meaning |
+|---|---|
+| `tmux new -d` | Start the session detached, in the background |
+| `-s some-project` | Name of the tmux session, used by the commands below |
+| `-c <folder>` | Folder Claude works in |
+| `--name` | Name shown in claude.ai/code and the mobile app |
+| `--spawn worktree` | Each new agent gets its own git worktree. Needs a git repository; without the flag, agents share the folder. |
+
+To check on them from an SSH terminal:
+
+```bash
+tmux ls                              # list running sessions
+tmux attach -t some-project          # watch one; Ctrl-b then d detaches again
+tmux kill-session -t some-project    # stop one
+```
+
+tmux sessions end when the Pi reboots, so start them again afterwards. Start them from a fresh SSH login: agents inherit that shell's groups, and one opened before a group change (such as `docker`) will not have it.
+
 ## Design decisions
 
 **Remote-SSH, not a VS Code tunnel.** A tunnel relays through a third party's servers. Remote-SSH stays on the local network or VPN, and nothing on the Pi is reachable from the internet.
