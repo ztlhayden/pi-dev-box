@@ -35,7 +35,7 @@ preflight() {
 }
 
 # build-essential is needed on arm64: npm packages without a prebuilt binary compile on install.
-APT_PACKAGES=(git curl ca-certificates build-essential tmux unzip jq)
+APT_PACKAGES=(git curl ca-certificates build-essential tmux unzip jq htop)
 
 base_packages() {
   local missing=() pkg
