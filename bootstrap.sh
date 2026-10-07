@@ -167,8 +167,6 @@ claude_code() {
 }
 
 # Docker Engine from Docker's own apt repo, which also carries the compose and buildx plugins.
-# The user is deliberately not added to the docker group: membership is root in all but name,
-# so docker stays behind sudo like everything else.
 docker_engine() {
   if has docker; then
     log "Docker already installed"
@@ -196,6 +194,19 @@ docker_engine() {
   sudo apt-get update
   sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
     docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+}
+
+# Lets the user, the VS Code extensions and Claude Code reach the daemon without sudo.
+# Membership is root in all but name; the README covers why that is accepted here.
+docker_group() {
+  if id -nG "$USER" | grep -qw docker; then
+    log "$USER already in the docker group"
+    return
+  fi
+
+  log "Adding $USER to the docker group"
+  sudo usermod -aG docker "$USER"
+  warn "log out and back in (and restart the VS Code server) for the docker group to apply"
 }
 
 # Extensions run on the Pi, inside the server that Remote-SSH installs on first connect, so
@@ -325,6 +336,7 @@ main() {
   ssh_key
   claude_code
   docker_engine
+  docker_group
   vscode_extensions
   firewall
   harden_ssh
