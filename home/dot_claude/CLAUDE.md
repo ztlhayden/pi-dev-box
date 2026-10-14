@@ -13,6 +13,8 @@ This machine's SSH key can reach every repository on the user's account, includi
 - Push the branch at the end of every session, so no work is left only on this machine.
 - Ask before opening a pull request.
 
+The `ztlhayden/ai-notes` repository (cloned at `~/ai-notes`) is the exception: agents own it. Work on its `main` branch and push to `main` without asking. The rule against force-pushing still applies.
+
 ## Commits and pull requests
 
 - Group changes into commits that each do one thing a reader can understand without the others.
