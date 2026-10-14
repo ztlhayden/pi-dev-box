@@ -42,3 +42,7 @@ The five default roles, kept as a `Status:` line in each ticket. See `~/ai-notes
 ### Domain docs
 
 One glossary and set of decisions per project folder in `~/ai-notes`. See `~/ai-notes/agents/domain.md`.
+
+### Repo maps
+
+A project's notes live in `~/ai-notes`, apart from its code, because one project can span several repos. Each project's `README.md` there maps its repos: where work lands, and with what tooling. Read `~/ai-notes/agents/repo-map.md` before building from tickets or across repos, and whenever a fact in a map changes.
