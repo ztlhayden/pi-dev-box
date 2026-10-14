@@ -154,6 +154,29 @@ ssh_key() {
   cat "$key.pub"
 }
 
+# The private notes repo that Claude Code's global rules point at. Cloned over SSH, so it waits
+# until this machine's key is on GitHub. An existing clone is left alone: it may hold unpushed work.
+NOTES_REPO="${NOTES_REPO:-git@github.com:ztlhayden/ai-notes.git}"
+NOTES_DIR="$HOME/ai-notes"
+
+notes_repo() {
+  if [[ -d $NOTES_DIR/.git ]]; then
+    log "Notes repo already cloned"
+    return
+  fi
+
+  if [[ -e $NOTES_DIR ]]; then
+    warn "$NOTES_DIR exists but is not a git clone; skipping the notes repo"
+    return
+  fi
+
+  log "Cloning notes into $NOTES_DIR"
+  if ! GIT_SSH_COMMAND='ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new' \
+    git clone -q "$NOTES_REPO" "$NOTES_DIR"; then
+    warn "could not clone $NOTES_REPO; add this machine's key to GitHub, then re-run"
+  fi
+}
+
 # Native installer: a self-updating arm64 binary in ~/.local/bin, independent of the Node version.
 claude_code() {
   if has claude || [[ -x $HOME/.local/bin/claude ]]; then
@@ -334,6 +357,7 @@ main() {
   mise_tool
   dotfiles
   ssh_key
+  notes_repo
   claude_code
   docker_engine
   docker_group
