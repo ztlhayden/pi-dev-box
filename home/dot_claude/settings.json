@@ -18,10 +18,6 @@
       "Bash(pnpm test *)",
       "Bash(pnpm exec *)"
     ],
-    "ask": [
-      "Bash(git push * main*)",
-      "Bash(git push * master*)"
-    ],
     "deny": [
       "Bash(sudo *)",
       "Bash(git push * --force*)",
@@ -29,6 +25,16 @@
       "Bash(git push --force*)",
       "Bash(git push -f*)",
       "Read(~/.ssh/**)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "~/.claude/hooks/ask-before-main-push.sh" }
+        ]
+      }
     ]
   }
 }
