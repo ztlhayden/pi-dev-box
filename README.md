@@ -25,7 +25,7 @@ A few steps involve credentials or details that are kept out of this repo, so th
 | Authorise your laptop's SSH key | Set it when imaging the drive, so the first login already uses a key | Key-only SSH is skipped until a key is authorised |
 | Set a password for your user | `sudo passwd $USER` | The sudo password step, which would otherwise lock sudo for good |
 | List the networks allowed to SSH in | One CIDR per line in `~/.config/pi-dev-box/ssh-allowed-subnets` | The firewall |
-| Add the machine's new key to GitHub | The script prints the public key; add it under Settings → SSH and GPG keys, and remove the old machine's key | Pushing to GitHub |
+| Add the machine's new key to GitHub | The script prints the public key; add it under Settings → SSH and GPG keys, and remove the old machine's key | Pushing to GitHub, and cloning the notes repo |
 | Log in to Claude Code | Run `claude` and follow the browser login | Using Claude Code |
 | Connect once from the laptop | Open the Pi in VS Code with Remote-SSH, which installs the VS Code server | Installing the editor extensions |
 
@@ -40,6 +40,7 @@ A few steps involve credentials or details that are kept out of this repo, so th
 | mise | From mise's apt repository | One tool for Node and other CLI versions; reads each project's own version file |
 | Dotfiles | chezmoi applies this repo, then mise installs the tools listed in its config | Config lives here, not on the machine |
 | SSH key | Generates a GitHub key for this machine if it has none, and prints the public half | One key per machine, so any one can be revoked alone |
+| Notes repo | Clones the private `ztlhayden/ai-notes` into `~/ai-notes`; leaves an existing clone alone | Claude Code's global rules point there for project notes, tickets and agent-skill settings; skipped until the machine's key is on GitHub |
 | Claude Code | Anthropic's native installer | A self-updating arm64 binary that does not depend on which Node version a project pins |
 | Docker Engine | From Docker's apt repository, with the compose and buildx plugins; adds the user to the `docker` group | Ubuntu's `docker.io` package lags behind and does not include the plugins |
 | VS Code extensions | Installs any extension in the list that the VS Code server is missing | Extensions run on the Pi, so a rebuilt Pi would otherwise come back without them; skipped until Remote-SSH has connected once |

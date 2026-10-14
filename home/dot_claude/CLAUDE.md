@@ -26,3 +26,19 @@ The `ztlhayden/ai-notes` repository (cloned at `~/ai-notes`) is the exception: a
 - Do not use `sudo`. System-level changes belong in `bootstrap.sh` in the pi-dev-box repo.
 - Do not read anything under `~/.ssh`.
 - Use pnpm, not npm. If pnpm asks to approve a package's install script, ask the user first.
+
+## Agent skills
+
+Shared by every project on this machine. The files are in the private notes repo, `~/ai-notes`.
+
+### Issue tracker
+
+Local markdown tickets under `~/ai-notes/<project>/tickets/`. See `~/ai-notes/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five default roles, kept as a `Status:` line in each ticket. See `~/ai-notes/agents/triage-labels.md`.
+
+### Domain docs
+
+One glossary and set of decisions per project folder in `~/ai-notes`. See `~/ai-notes/agents/domain.md`.
