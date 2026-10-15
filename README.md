@@ -57,14 +57,14 @@ Automatic security updates are already on by default in Ubuntu Server, so the sc
 | File | Lands at | Purpose |
 |---|---|---|
 | `home/dot_bash_aliases` | `~/.bash_aliases` | Turns on mise in interactive shells. Ubuntu's stock `.bashrc` already loads this file, so `.bashrc` is left alone. |
-| `home/dot_bash_profile` | `~/.bash_profile` | Puts mise-managed tools on `PATH` for programs that never open an interactive shell, such as the VS Code server |
+| `home/dot_bash_profile` | `~/.bash_profile` | Puts mise-managed tools on `PATH` for programs that never open an interactive shell, such as the VS Code server, and stops npm running install scripts |
 | `home/dot_gitconfig` | `~/.gitconfig` | Commit identity and default branch name |
 | `home/dot_config/mise/config.toml` | `~/.config/mise/config.toml` | Global fallback tool versions |
 | `home/dot_config/pi-dev-box/vscode-extensions.txt` | `~/.config/pi-dev-box/vscode-extensions.txt` | Extensions the script installs into the VS Code server. After adding one in VS Code, add its ID here too. |
 | `home/dot_claude/CLAUDE.md` | `~/.claude/CLAUDE.md` | Rules Claude Code follows on this machine: which repositories, how to branch, commit and push |
 | `home/dot_claude/settings.json` | `~/.claude/settings.json` | Permissions enforced by Claude Code itself: routine commands pre-approved, `sudo` and force-pushes blocked |
 | `home/dot_claude/hooks/` | `~/.claude/hooks/` | Checks on each shell command: ask before a push to `main` (except in `~/ai-notes`), and send file edits to the Edit tool rather than `sed -i` or a script |
-| `home/indy-center/CLAUDE.md` | `~/indy-center/CLAUDE.md` | Loaded for every Indy Center repo: points Claude Code at the team docs at tech.flyindycenter.com, and has it follow each repo's lockfile rather than the machine-wide pnpm rule |
+| `home/indy-center/CLAUDE.md` | `~/indy-center/CLAUDE.md` | Loaded for every Indy Center repo: points Claude Code at the team docs at tech.flyindycenter.com, and has it use each repo's own package manager, named by its lockfile, rather than the machine-wide pnpm rule |
 
 Project-level config (ESLint, Prettier, Vitest, Node version) is deliberately not here. It belongs in each project's repository so it travels with the code. The extension list is the machine-wide set; a project can still recommend its own in `.vscode/extensions.json`.
 
@@ -117,7 +117,7 @@ tmux sessions end when the Pi reboots, so start them again afterwards. Start the
 
 - A rules file tells Claude which repositories it may touch, to branch for every change, and never to push to `main` without a specific OK.
 - Claude Code's own permission settings block `sudo`, force-pushes, and reading the key through its file tools.
-- pnpm replaces npm, because it does not run dependencies' install scripts unless approved. A malicious package is the most realistic way a key on a dev box gets stolen.
+- pnpm replaces npm, because it does not run dependencies' install scripts unless approved. In projects that use npm, `.bash_profile` sets `npm_config_ignore_scripts` so npm skips them too. A malicious package is the most realistic way a key on a dev box gets stolen.
 - Nothing on the Pi is reachable from the internet.
 
 **The user is in the `docker` group, which is root in all but name.** Anyone who can talk to the Docker daemon can mount the whole filesystem as root, so this is a way around both the sudo password and Claude Code's `sudo` block. I accepted that because the VS Code container extensions and Claude Code are of little use if they cannot reach the daemon, and because the Pi is disposable: the one thing on it worth stealing, the GitHub key, is already readable without root. Also worth knowing: ports published by a container bypass ufw, so a published port is open to the whole local network, not only the subnets allowed to SSH in. Bind to `127.0.0.1` when that matters.
