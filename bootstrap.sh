@@ -39,6 +39,7 @@ APT_PACKAGES=(git curl ca-certificates build-essential tmux unzip jq htop)
 
 # Libraries Playwright lists for Chromium on Ubuntu 26.04, plus Latin and emoji fonts.
 # Add other font packs (CJK, Thai) when a project needs them.
+# home/dot_config/fontconfig/fonts.conf maps sans-serif, serif and monospace onto these.
 BROWSER_PACKAGES=(
   libasound2t64 libatk-bridge2.0-0t64 libatk1.0-0t64 libatspi2.0-0t64 libcairo2 libcups2t64
   libdbus-1-3 libdrm2 libgbm1 libglib2.0-0t64 libnspr4 libnss3 libpango-1.0-0 libx11-6 libxcb1
