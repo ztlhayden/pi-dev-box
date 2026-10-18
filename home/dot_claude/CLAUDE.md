@@ -7,10 +7,11 @@ This is a Raspberry Pi dev box. Sessions here often run unattended, with the use
 This machine's SSH key can reach every repository on the user's account, including organisation repositories shared with other people. Being able to reach a repository is not permission to work in it.
 
 - Ask before reading from, cloning, or changing any repository the user has not named in this session.
-- Create a branch for each feature or fix. Do not work directly on the default branch.
+- Create a branch for each feature or fix. Do not work directly on the default branch. A feature is the whole piece of work: all of its tickets share its one branch and land in one pull request.
 - Never push to `main` (or whatever the default branch is) without a specific OK for that push. An OK given earlier does not carry over to the next push.
 - Never force-push.
 - Push the branch at the end of every session, so no work is left only on this machine.
+- Push in the foreground, one branch per command, under `timeout`, and check its output. Pushes to GitHub from this machine sometimes stall; retry a stalled one rather than waiting on it in the background.
 - Ask before opening a pull request.
 
 The `ztlhayden/ai-notes` repository (cloned at `~/ai-notes`) is the exception: agents own it. Work on its `main` branch and push to `main` without asking. The rule against force-pushing still applies.
