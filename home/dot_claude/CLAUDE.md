@@ -36,6 +36,7 @@ The `ztlhayden/ai-notes` repository (cloned at `~/ai-notes`) is the exception: a
 
 - Do not use `sudo`. System-level changes belong in `bootstrap.sh` in the pi-dev-box repo.
 - Do not read anything under `~/.ssh`.
+- Change files with the Edit and Write tools; a hook blocks in-place shell rewrites (`sed -i`, scripts that write the file back).
 - Use pnpm, not npm. If pnpm asks to approve a package's install script, ask the user first.
 
 ## Agent skills
