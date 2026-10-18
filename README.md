@@ -34,7 +34,7 @@ A few steps involve credentials or details that are kept out of this repo, so th
 | Step | What | Why this way |
 |---|---|---|
 | Preflight | Checks architecture, Ubuntu release, and that root is on the NVMe | A Pi with an SD card inserted can silently boot from it instead |
-| Base packages | git, curl, build tools, tmux | Some npm packages have no prebuilt arm64 binary and compile on install |
+| Base packages | git, curl, build tools, tmux, and the libraries and fonts Chromium needs | Some npm packages have no prebuilt arm64 binary and compile on install. The Chromium list is the one Playwright gives for Ubuntu 26.04, plus Latin and emoji fonts; other font packs wait until a project needs them |
 | GitHub CLI | From GitHub's apt repository | Ubuntu's own package is frozen at the release version and falls far behind |
 | 1Password CLI | From 1Password's apt repository | Ubuntu does not package it |
 | mise | From mise's apt repository | One tool for Node and other CLI versions; reads each project's own version file |
@@ -42,6 +42,8 @@ A few steps involve credentials or details that are kept out of this repo, so th
 | SSH key | Generates a GitHub key for this machine if it has none, and prints the public half | One key per machine, so any one can be revoked alone |
 | Notes repo | Clones the private `ztlhayden/ai-notes` into `~/ai-notes`; leaves an existing clone alone | Claude Code's global rules point there for project notes, tickets and agent-skill settings; skipped until the machine's key is on GitHub |
 | Claude Code | Anthropic's native installer | A self-updating arm64 binary that does not depend on which Node version a project pins |
+| Browser for agents | `@playwright/cli` at a pinned version, installed globally with pnpm, then the Chromium build its own Playwright expects | Lets agents open, click through and screenshot logged-out pages to check their own work. Chromium because Google Chrome has no Linux arm64 build. Changing the pin means regenerating the skill in `home/dot_claude/skills/playwright-cli` |
+| Chromium sandbox | An AppArmor profile that lets Playwright's Chromium create user namespaces | Ubuntu allows that only for programs a profile lists; its own profiles cover Chrome and Chromium in `/opt` and `/usr`, not Playwright's copies in `~/.cache` |
 | Docker Engine | From Docker's apt repository, with the compose and buildx plugins; adds the user to the `docker` group | Ubuntu's `docker.io` package lags behind and does not include the plugins |
 | VS Code extensions | Installs any extension in the list that the VS Code server is missing | Extensions run on the Pi, so a rebuilt Pi would otherwise come back without them; skipped until Remote-SSH has connected once |
 | Firewall | ufw allows SSH only from subnets listed in a file kept on the machine | Network details stay out of this public repo; skipped if the file is missing |
@@ -57,13 +59,15 @@ Automatic security updates are already on by default in Ubuntu Server, so the sc
 | File | Lands at | Purpose |
 |---|---|---|
 | `home/dot_bash_aliases` | `~/.bash_aliases` | Turns on mise in interactive shells. Ubuntu's stock `.bashrc` already loads this file, so `.bashrc` is left alone. |
-| `home/dot_bash_profile` | `~/.bash_profile` | Puts mise-managed tools on `PATH` for programs that never open an interactive shell, such as the VS Code server, and stops npm running install scripts |
+| `home/dot_bash_profile` | `~/.bash_profile` | Puts mise-managed tools on `PATH` for programs that never open an interactive shell, such as the VS Code server, along with global pnpm packages, and stops npm running install scripts |
 | `home/dot_gitconfig` | `~/.gitconfig` | Commit identity and default branch name |
 | `home/dot_config/mise/config.toml` | `~/.config/mise/config.toml` | Global fallback tool versions |
 | `home/dot_config/pi-dev-box/vscode-extensions.txt` | `~/.config/pi-dev-box/vscode-extensions.txt` | Extensions the script installs into the VS Code server. After adding one in VS Code, add its ID here too. |
-| `home/dot_claude/CLAUDE.md` | `~/.claude/CLAUDE.md` | Rules Claude Code follows on this machine: where repositories are cloned, which it may touch, how to branch, commit and push |
+| `home/dot_claude/CLAUDE.md` | `~/.claude/CLAUDE.md` | Rules Claude Code follows on this machine: where repositories are cloned, which it may touch, how to branch, commit and push, and how to check work in the browser |
 | `home/dot_claude/settings.json` | `~/.claude/settings.json` | Permissions enforced by Claude Code itself: routine commands pre-approved, `sudo` and force-pushes blocked |
 | `home/dot_claude/hooks/` | `~/.claude/hooks/` | Checks on each shell command: ask before a push to `main` (except in `~/ai-notes`), and send file edits to the Edit tool rather than `sed -i` or a script |
+| `home/dot_claude/skills/playwright-cli/` | `~/.claude/skills/playwright-cli/` | The skill that `playwright-cli install --skills claude` generates for the pinned version, kept unedited so it can be regenerated on upgrade; rules for using it on this machine are in `CLAUDE.md` |
+| `home/dot_playwright/cli.config.json.tmpl` | `~/.playwright/cli.config.json` | Global `playwright-cli` config: Chromium with its sandbox on, and output under `~/.cache/playwright-cli/` so check screenshots stay out of repos |
 | `home/indy-center/CLAUDE.md` | `~/indy-center/CLAUDE.md` | Loaded for every Indy Center repo: lists the repos cloned there, points Claude Code at the team docs at tech.flyindycenter.com, and has it use each repo's own package manager, named by its lockfile, rather than the machine-wide pnpm rule |
 
 Project-level config (ESLint, Prettier, Vitest, Node version) is deliberately not here. It belongs in each project's repository so it travels with the code. The extension list is the machine-wide set; a project can still recommend its own in `.vscode/extensions.json`.
