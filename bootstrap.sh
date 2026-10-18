@@ -37,9 +37,18 @@ preflight() {
 # build-essential is needed on arm64: npm packages without a prebuilt binary compile on install.
 APT_PACKAGES=(git curl ca-certificates build-essential tmux unzip jq htop)
 
+# Libraries Playwright lists for Chromium on Ubuntu 26.04, plus Latin and emoji fonts.
+# Add other font packs (CJK, Thai) when a project needs them.
+BROWSER_PACKAGES=(
+  libasound2t64 libatk-bridge2.0-0t64 libatk1.0-0t64 libatspi2.0-0t64 libcairo2 libcups2t64
+  libdbus-1-3 libdrm2 libgbm1 libglib2.0-0t64 libnspr4 libnss3 libpango-1.0-0 libx11-6 libxcb1
+  libxcomposite1 libxdamage1 libxext6 libxfixes3 libxkbcommon0 libxrandr2
+  fonts-liberation fonts-noto-color-emoji
+)
+
 base_packages() {
   local missing=() pkg
-  for pkg in "${APT_PACKAGES[@]}"; do
+  for pkg in "${APT_PACKAGES[@]}" "${BROWSER_PACKAGES[@]}"; do
     dpkg -s "$pkg" >/dev/null 2>&1 || missing+=("$pkg")
   done
 
@@ -187,6 +196,64 @@ claude_code() {
   log "Installing Claude Code"
   curl -fsSL https://claude.ai/install.sh | bash
   warn "run 'claude' once to log in"
+}
+
+# Headless Chromium for agents, driven through @playwright/cli. Changing the pin is deliberate:
+# regenerate home/dot_claude/skills/playwright-cli from the new version at the same time.
+PLAYWRIGHT_CLI_VERSION=0.1.22
+
+playwright_cli() {
+  # Matches PNPM_HOME in home/dot_bash_profile, which this run has not loaded yet.
+  local pnpm_home="$HOME/.local/share/pnpm"
+  local bin="$pnpm_home/bin/playwright-cli"
+  if [[ -x $bin && "$(mise exec -- "$bin" --version 2>/dev/null)" == "$PLAYWRIGHT_CLI_VERSION" ]]; then
+    log "playwright-cli $PLAYWRIGHT_CLI_VERSION already installed"
+  else
+    log "Installing @playwright/cli $PLAYWRIGHT_CLI_VERSION"
+    PNPM_HOME="$pnpm_home" PATH="$pnpm_home/bin:$PATH" \
+      mise exec -- pnpm add -g "@playwright/cli@$PLAYWRIGHT_CLI_VERSION"
+  fi
+
+  # The CLI's own Playwright names the Chromium build it was made with.
+  local chromium_dir
+  chromium_dir="$(mise exec -- "$bin" install-browser chromium --no-shell --dry-run \
+    | awk '/Install location/ {print $3; exit}')"
+  if [[ -n $chromium_dir && -d $chromium_dir ]]; then
+    log "Chromium for playwright-cli already installed"
+    return
+  fi
+
+  log "Installing Chromium for playwright-cli"
+  mise exec -- "$bin" install-browser chromium --no-shell
+}
+
+# Ubuntu only lets AppArmor-listed programs create the user namespaces Chromium's sandbox needs.
+# Its own profiles cover Chrome and Chromium in /opt and /usr; this one covers Playwright's copies.
+APPARMOR_PROFILE=/etc/apparmor.d/playwright-chromium
+
+chromium_sandbox() {
+  local tmp
+  tmp="$(mktemp)"
+  printf '%s\n' \
+    'abi <abi/5.0>,' \
+    'include <tunables/global>' \
+    '' \
+    'profile playwright-chromium @{HOME}/.cache/ms-playwright/chromium{,_headless_shell}-*/chrome-*/{chrome,chrome-headless-shell} flags=(unconfined) {' \
+    '  userns,' \
+    '' \
+    '  include if exists <local/playwright-chromium>' \
+    '}' >"$tmp"
+
+  if cmp -s "$tmp" "$APPARMOR_PROFILE"; then
+    log "Chromium sandbox profile already in place"
+    rm -f "$tmp"
+    return
+  fi
+
+  log "Allowing Playwright's Chromium to use its sandbox"
+  sudo install -m 644 -o root -g root "$tmp" "$APPARMOR_PROFILE"
+  rm -f "$tmp"
+  sudo apparmor_parser -r "$APPARMOR_PROFILE"
 }
 
 # Docker Engine from Docker's own apt repo, which also carries the compose and buildx plugins.
@@ -359,6 +426,8 @@ main() {
   ssh_key
   notes_repo
   claude_code
+  playwright_cli
+  chromium_sandbox
   docker_engine
   docker_group
   vscode_extensions

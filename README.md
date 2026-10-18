@@ -34,7 +34,7 @@ A few steps involve credentials or details that are kept out of this repo, so th
 | Step | What | Why this way |
 |---|---|---|
 | Preflight | Checks architecture, Ubuntu release, and that root is on the NVMe | A Pi with an SD card inserted can silently boot from it instead |
-| Base packages | git, curl, build tools, tmux | Some npm packages have no prebuilt arm64 binary and compile on install |
+| Base packages | git, curl, build tools, tmux, and the libraries and fonts Chromium needs | Some npm packages have no prebuilt arm64 binary and compile on install. The Chromium list is the one Playwright gives for Ubuntu 26.04, plus Latin and emoji fonts; other font packs wait until a project needs them |
 | GitHub CLI | From GitHub's apt repository | Ubuntu's own package is frozen at the release version and falls far behind |
 | 1Password CLI | From 1Password's apt repository | Ubuntu does not package it |
 | mise | From mise's apt repository | One tool for Node and other CLI versions; reads each project's own version file |
@@ -42,6 +42,8 @@ A few steps involve credentials or details that are kept out of this repo, so th
 | SSH key | Generates a GitHub key for this machine if it has none, and prints the public half | One key per machine, so any one can be revoked alone |
 | Notes repo | Clones the private `ztlhayden/ai-notes` into `~/ai-notes`; leaves an existing clone alone | Claude Code's global rules point there for project notes, tickets and agent-skill settings; skipped until the machine's key is on GitHub |
 | Claude Code | Anthropic's native installer | A self-updating arm64 binary that does not depend on which Node version a project pins |
+| Browser for agents | `@playwright/cli` at a pinned version, installed globally with pnpm, then the Chromium build its own Playwright expects | Lets agents open, click through and screenshot logged-out pages to check their own work. Chromium because Google Chrome has no Linux arm64 build. Changing the pin means regenerating the skill in `home/dot_claude/skills/playwright-cli` |
+| Chromium sandbox | An AppArmor profile that lets Playwright's Chromium create user namespaces | Ubuntu allows that only for programs a profile lists; its own profiles cover Chrome and Chromium in `/opt` and `/usr`, not Playwright's copies in `~/.cache` |
 | Docker Engine | From Docker's apt repository, with the compose and buildx plugins; adds the user to the `docker` group | Ubuntu's `docker.io` package lags behind and does not include the plugins |
 | VS Code extensions | Installs any extension in the list that the VS Code server is missing | Extensions run on the Pi, so a rebuilt Pi would otherwise come back without them; skipped until Remote-SSH has connected once |
 | Firewall | ufw allows SSH only from subnets listed in a file kept on the machine | Network details stay out of this public repo; skipped if the file is missing |
