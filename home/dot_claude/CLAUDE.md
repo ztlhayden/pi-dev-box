@@ -38,6 +38,7 @@ The `ztlhayden/ai-notes` repository (cloned at `~/ai-notes`) is the exception: a
 - Do not read anything under `~/.ssh`.
 - Change files with the Edit and Write tools; a hook blocks in-place shell rewrites (`sed -i`, scripts that write the file back).
 - Use pnpm, not npm. If pnpm asks to approve a package's install script, ask the user first.
+- Give each new git worktree its own install (`pnpm install`, or `npm ci` where the lockfile is npm's). Vite's dev server refuses files outside the worktree, so a `node_modules` linked from the main checkout breaks the page's scripts.
 - `playwright-cli` (see its skill) drives a headless Chromium for checking your own work on logged-out pages: a local dev server, an HTML file or artifact, a public site. Pages behind the user's logins stay with Claude in Chrome on their laptop, so ask the user. `bootstrap.sh` pins its version; if the command is missing, ask the user to run that script rather than installing it yourself.
   - Use your own named session (`-s=<repo-or-worktree>`) and close it when done: every agent on the machine shares the sessions.
   - Check at Tailwind v4's default breakpoints: phone 390×844 (below `sm`), tablet 768×1024 (`md`), desktop 1280×800 (`xl`). In a project with its own breakpoints, pick widths inside its ranges. All three sizes when a change touches layout; phone alone for a small change.
