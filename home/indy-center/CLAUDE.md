@@ -12,6 +12,8 @@ The docs set each project's conventions; this machine's GitHub and safety rules 
 
 Use the package manager the repo's lockfile names: `package-lock.json` is npm, `pnpm-lock.yaml` is pnpm. This replaces the machine-wide pnpm rule for repos here. npm on this machine skips install scripts, as pnpm does; when a package fails because its script never ran, ask the user before running `npm rebuild <package>`.
 
+Start dev servers as tracked background tasks, so the session can stop them by task.
+
 ## Repos cloned here
 
 From the Indy-Center GitHub organisation. `/projects/` on the docs site is the full list and says which are active.
