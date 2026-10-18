@@ -8,6 +8,8 @@ The team's engineering docs are at https://tech.flyindycenter.com. Fetch the mat
 - `/patterns/auth/`: auth, Worker shapes, RPC versus Queues, CI workflows
 - `/agreements/definition-of-done/`: definition of done, Jira, branching, CI
 
+For the whole site in one fetch (about 100 KB), use `/llms-full.txt`; `/llms.txt` indexes it.
+
 The docs set each project's conventions; this machine's GitHub and safety rules still apply on top. When a page disagrees with the code, tell the user which one looks right.
 
 Use the package manager the repo's lockfile names: `package-lock.json` is npm, `pnpm-lock.yaml` is pnpm. This replaces the machine-wide pnpm rule for repos here. npm on this machine skips install scripts, as pnpm does; when a package fails because its script never ran, ask the user before running `npm rebuild <package>`.
