@@ -63,7 +63,7 @@ Automatic security updates are already on by default in Ubuntu Server, so the sc
 | `home/dot_gitconfig` | `~/.gitconfig` | Commit identity and default branch name |
 | `home/dot_config/mise/config.toml` | `~/.config/mise/config.toml` | Global fallback tool versions |
 | `home/dot_config/pi-dev-box/vscode-extensions.txt` | `~/.config/pi-dev-box/vscode-extensions.txt` | Extensions the script installs into the VS Code server. After adding one in VS Code, add its ID here too. |
-| `home/dot_claude/CLAUDE.md` | `~/.claude/CLAUDE.md` | Rules Claude Code follows on this machine: which repositories, how to branch, commit and push |
+| `home/dot_claude/CLAUDE.md` | `~/.claude/CLAUDE.md` | Rules Claude Code follows on this machine: which repositories, how to branch, commit and push, and how to check work in the browser |
 | `home/dot_claude/settings.json` | `~/.claude/settings.json` | Permissions enforced by Claude Code itself: routine commands pre-approved, `sudo` and force-pushes blocked |
 | `home/dot_claude/hooks/` | `~/.claude/hooks/` | Checks on each shell command: ask before a push to `main` (except in `~/ai-notes`), and send file edits to the Edit tool rather than `sed -i` or a script |
 | `home/dot_claude/skills/playwright-cli/` | `~/.claude/skills/playwright-cli/` | The skill that `playwright-cli install --skills claude` generates for the pinned version, kept unedited so it can be regenerated on upgrade; rules for using it on this machine are in `CLAUDE.md` |
