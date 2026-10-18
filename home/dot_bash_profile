@@ -4,6 +4,10 @@
 # shell (VS Code server, Claude Code).
 eval "$(mise activate bash --shims)"
 
+# Global pnpm packages, such as playwright-cli, which bootstrap.sh installs to this same folder.
+export PNPM_HOME="$HOME/.local/share/pnpm"
+case ":$PATH:" in *":$PNPM_HOME/bin:"*) ;; *) PATH="$PNPM_HOME/bin:$PATH" ;; esac
+
 # npm skips dependencies' install scripts unless one is run on purpose, as pnpm does.
 # Set here rather than in ~/.npmrc, which is per machine and not managed by this repo.
 export npm_config_ignore_scripts=true

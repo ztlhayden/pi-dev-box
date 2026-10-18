@@ -59,13 +59,15 @@ Automatic security updates are already on by default in Ubuntu Server, so the sc
 | File | Lands at | Purpose |
 |---|---|---|
 | `home/dot_bash_aliases` | `~/.bash_aliases` | Turns on mise in interactive shells. Ubuntu's stock `.bashrc` already loads this file, so `.bashrc` is left alone. |
-| `home/dot_bash_profile` | `~/.bash_profile` | Puts mise-managed tools on `PATH` for programs that never open an interactive shell, such as the VS Code server, and stops npm running install scripts |
+| `home/dot_bash_profile` | `~/.bash_profile` | Puts mise-managed tools on `PATH` for programs that never open an interactive shell, such as the VS Code server, along with global pnpm packages, and stops npm running install scripts |
 | `home/dot_gitconfig` | `~/.gitconfig` | Commit identity and default branch name |
 | `home/dot_config/mise/config.toml` | `~/.config/mise/config.toml` | Global fallback tool versions |
 | `home/dot_config/pi-dev-box/vscode-extensions.txt` | `~/.config/pi-dev-box/vscode-extensions.txt` | Extensions the script installs into the VS Code server. After adding one in VS Code, add its ID here too. |
 | `home/dot_claude/CLAUDE.md` | `~/.claude/CLAUDE.md` | Rules Claude Code follows on this machine: which repositories, how to branch, commit and push |
 | `home/dot_claude/settings.json` | `~/.claude/settings.json` | Permissions enforced by Claude Code itself: routine commands pre-approved, `sudo` and force-pushes blocked |
 | `home/dot_claude/hooks/` | `~/.claude/hooks/` | Checks on each shell command: ask before a push to `main` (except in `~/ai-notes`), and send file edits to the Edit tool rather than `sed -i` or a script |
+| `home/dot_claude/skills/playwright-cli/` | `~/.claude/skills/playwright-cli/` | The skill that `playwright-cli install --skills claude` generates for the pinned version, kept unedited so it can be regenerated on upgrade; rules for using it on this machine are in `CLAUDE.md` |
+| `home/dot_playwright/cli.config.json.tmpl` | `~/.playwright/cli.config.json` | Global `playwright-cli` config: Chromium with its sandbox on, and output under `~/.cache/playwright-cli/` so check screenshots stay out of repos |
 | `home/indy-center/CLAUDE.md` | `~/indy-center/CLAUDE.md` | Loaded for every Indy Center repo: points Claude Code at the team docs at tech.flyindycenter.com, and has it use each repo's own package manager, named by its lockfile, rather than the machine-wide pnpm rule |
 
 Project-level config (ESLint, Prettier, Vitest, Node version) is deliberately not here. It belongs in each project's repository so it travels with the code. The extension list is the machine-wide set; a project can still recommend its own in `.vscode/extensions.json`.
