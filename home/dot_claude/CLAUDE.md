@@ -1,6 +1,16 @@
 # Working on this machine
 
-This is a Raspberry Pi dev box. Sessions here often run unattended, with the user checking in from their phone. This file is managed in the pi-dev-box repo; change it there, not here.
+This is a Raspberry Pi dev box. Sessions here often run unattended, with the user checking in from their phone. This file is managed in the pi-dev-box repo (`~/ztlhayden/pi-dev-box`); change it there, not here.
+
+## Folders
+
+Repositories are cloned by GitHub owner:
+
+- `~/ztlhayden/`: the user's personal account. `pi-dev-box` is this machine's setup: bootstrap script and the dotfiles chezmoi applies, including this file. Change it in this clone, on a branch; chezmoi keeps its own read-only copy in `~/.local/share/chezmoi`.
+- `~/indy-center/`: the Indy-Center organisation, shared with the team. Its own `CLAUDE.md` lists the repos.
+- `~/ai-notes`: the user's private notes repo (see below).
+
+A `<repo>.<name>` folder beside a repo is a git worktree of it.
 
 ## GitHub
 
