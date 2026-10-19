@@ -172,19 +172,20 @@ NOTES_DIR="$HOME/ai-notes"
 notes_repo() {
   if [[ -d $NOTES_DIR/.git ]]; then
     log "Notes repo already cloned"
-    return
-  fi
-
-  if [[ -e $NOTES_DIR ]]; then
+  elif [[ -e $NOTES_DIR ]]; then
     warn "$NOTES_DIR exists but is not a git clone; skipping the notes repo"
     return
+  else
+    log "Cloning notes into $NOTES_DIR"
+    if ! GIT_SSH_COMMAND='ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new' \
+      git clone -q "$NOTES_REPO" "$NOTES_DIR"; then
+      warn "could not clone $NOTES_REPO; add this machine's key to GitHub, then re-run"
+      return
+    fi
   fi
 
-  log "Cloning notes into $NOTES_DIR"
-  if ! GIT_SSH_COMMAND='ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new' \
-    git clone -q "$NOTES_REPO" "$NOTES_DIR"; then
-    warn "could not clone $NOTES_REPO; add this machine's key to GitHub, then re-run"
-  fi
+  # The repo's pre-commit hook checks the tickets.
+  git -C "$NOTES_DIR" config core.hooksPath .githooks
 }
 
 # Native installer: a self-updating arm64 binary in ~/.local/bin, independent of the Node version.
