@@ -5,3 +5,14 @@
 # activate relies on never runs there; it keeps ~/.bash_profile's shims, which pick
 # the version for each command's directory.
 [ -n "${CLAUDECODE:-}" ] || eval "$(mise activate bash)"
+
+# dev-servers: every program of yours listening on a port, with its pid, folder and command.
+# `kill <pid>` stops one.
+dev-servers() {
+  printf '%-6s %-8s %-45s %s\n' PORT PID FOLDER COMMAND
+  ss -ltnpH | grep -oP '(?<=:)\d+ .*?pid=\d+' | sort -un | while read -r port rest; do
+    local pid=${rest##*pid=} dir
+    dir=$(readlink "/proc/$pid/cwd")
+    printf '%-6s %-8s %-45s %s\n' "$port" "$pid" "${dir/#$HOME/\~}" "$(ps -o args= -p "$pid" | cut -c1-70)"
+  done
+}
