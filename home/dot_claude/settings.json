@@ -24,7 +24,11 @@
       "Bash(git push * -f*)",
       "Bash(git push --force*)",
       "Bash(git push -f*)",
-      "Read(~/.ssh/**)"
+      "Read(~/.ssh/**)",
+      "Read(~/.npmrc)",
+      "Read(~/.netrc)",
+      "Read(~/.git-credentials)",
+      "Read(~/.config/gh/hosts.yml)"
     ]
   },
   "hooks": {
@@ -33,7 +37,8 @@
         "matcher": "Bash",
         "hooks": [
           { "type": "command", "command": "~/.claude/hooks/ask-before-main-push.sh" },
-          { "type": "command", "command": "~/.claude/hooks/edit-files-with-tools.sh" }
+          { "type": "command", "command": "~/.claude/hooks/edit-files-with-tools.sh" },
+          { "type": "command", "command": "~/.claude/hooks/block-credential-reads.sh" }
         ]
       }
     ]
