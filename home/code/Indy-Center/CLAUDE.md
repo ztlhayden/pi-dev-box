@@ -16,6 +16,11 @@ Use the package manager the repo's lockfile names: `package-lock.json` is npm, `
 
 Start dev servers as tracked background tasks, so the session can stop them by task.
 
+The user's private notes in `~/code/ai-notes` hold facts the docs site lacks or has wrong:
+
+- VPS work (any app deployed there, backups, the server itself): `docker-infrastructure/README.md` and its `research/vps-patterns.md`
+- Jira items, before writing or editing one: `agents/jira.md`
+
 ## Repos cloned here
 
 From the Indy-Center GitHub organisation. `/projects/` on the docs site is the full list and says which are active.
