@@ -167,7 +167,7 @@ ssh_key() {
 # The private notes repo that Claude Code's global rules point at. Cloned over SSH, so it waits
 # until this machine's key is on GitHub. An existing clone is left alone: it may hold unpushed work.
 NOTES_REPO="${NOTES_REPO:-git@github.com:ztlhayden/ai-notes.git}"
-NOTES_DIR="$HOME/ai-notes"
+NOTES_DIR="$HOME/code/ai-notes"
 
 notes_repo() {
   if [[ -d $NOTES_DIR/.git ]]; then

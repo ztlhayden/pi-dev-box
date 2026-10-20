@@ -40,7 +40,7 @@ A few steps involve credentials or details that are kept out of this repo, so th
 | mise | From mise's apt repository | One tool for Node and other CLI versions; reads each project's own version file |
 | Dotfiles | chezmoi applies this repo, then mise installs the tools listed in its config | Config lives here, not on the machine |
 | SSH key | Generates a GitHub key for this machine if it has none, and prints the public half | One key per machine, so any one can be revoked alone |
-| Notes repo | Clones the private `ztlhayden/ai-notes` into `~/ai-notes`; leaves an existing clone alone | Claude Code's global rules point there for project notes, tickets and agent-skill settings; skipped until the machine's key is on GitHub |
+| Notes repo | Clones the private `ztlhayden/ai-notes` into `~/code/ai-notes`; leaves an existing clone alone | Claude Code's global rules point there for project notes, tickets and agent-skill settings; skipped until the machine's key is on GitHub |
 | Claude Code | Anthropic's native installer | A self-updating arm64 binary that does not depend on which Node version a project pins |
 | Browser for agents | `@playwright/cli` at a pinned version, installed globally with pnpm, then the Chromium build its own Playwright expects | Lets agents open, click through and screenshot logged-out pages to check their own work. Chromium because Google Chrome has no Linux arm64 build. Changing the pin means regenerating the skill in `home/dot_claude/skills/playwright-cli` |
 | Chromium sandbox | An AppArmor profile that lets Playwright's Chromium create user namespaces | Ubuntu allows that only for programs a profile lists; its own profiles cover Chrome and Chromium in `/opt` and `/usr`, not Playwright's copies in `~/.cache` |
@@ -65,10 +65,10 @@ Automatic security updates are already on by default in Ubuntu Server, so the sc
 | `home/dot_config/pi-dev-box/vscode-extensions.txt` | `~/.config/pi-dev-box/vscode-extensions.txt` | Extensions the script installs into the VS Code server. After adding one in VS Code, add its ID here too. |
 | `home/dot_claude/CLAUDE.md` | `~/.claude/CLAUDE.md` | Rules Claude Code follows on this machine: where repositories are cloned, which it may touch, how to branch, commit and push, and how to check work in the browser |
 | `home/dot_claude/settings.json` | `~/.claude/settings.json` | Permissions enforced by Claude Code itself: routine commands pre-approved, `sudo`, force-pushes and reading credential files blocked |
-| `home/dot_claude/hooks/` | `~/.claude/hooks/` | Checks on each shell command: ask before a push to `main` (except in `~/ai-notes`), send file edits to the Edit tool rather than `sed -i` or a script, and refuse commands that name a credential file (`~/.ssh`, `~/.npmrc`, `~/.netrc`, `~/.git-credentials`, gh's `hosts.yml`) |
+| `home/dot_claude/hooks/` | `~/.claude/hooks/` | Checks on each shell command: ask before a push to `main` (except in `~/code/ai-notes`), send file edits to the Edit tool rather than `sed -i` or a script, and refuse commands that name a credential file (`~/.ssh`, `~/.npmrc`, `~/.netrc`, `~/.git-credentials`, gh's `hosts.yml`) |
 | `home/dot_claude/skills/playwright-cli/` | `~/.claude/skills/playwright-cli/` | The skill that `playwright-cli install --skills claude` generates for the pinned version, kept unedited so it can be regenerated on upgrade; rules for using it on this machine are in `CLAUDE.md` |
 | `home/dot_playwright/cli.config.json.tmpl` | `~/.playwright/cli.config.json` | Global `playwright-cli` config: Chromium with its sandbox on, and output under `~/.cache/playwright-cli/` so check screenshots stay out of repos |
-| `home/indy-center/CLAUDE.md` | `~/indy-center/CLAUDE.md` | Loaded for every Indy Center repo: lists the repos cloned there, points Claude Code at the team docs at tech.flyindycenter.com, and has it use each repo's own package manager, named by its lockfile, rather than the machine-wide pnpm rule |
+| `home/code/Indy-Center/CLAUDE.md` | `~/code/Indy-Center/CLAUDE.md` | Loaded for every Indy Center repo: lists the repos cloned there, points Claude Code at the team docs at tech.flyindycenter.com, and has it use each repo's own package manager, named by its lockfile, rather than the machine-wide pnpm rule |
 
 Project-level config (ESLint, Prettier, Vitest, Node version) is deliberately not here. It belongs in each project's repository so it travels with the code. The extension list is the machine-wide set; a project can still recommend its own in `.vscode/extensions.json`.
 
@@ -79,7 +79,7 @@ Project-level config (ESLint, Prettier, Vitest, Node version) is deliberately no
 A coding project, where each agent started from the app gets its own git worktree so they do not edit the same files:
 
 ```bash
-tmux new -d -s some-project -c ~/indy-center/some-project \
+tmux new -d -s some-project -c ~/code/Indy-Center/some-project \
   'claude remote-control --name some-project --spawn worktree'
 ```
 
