@@ -58,10 +58,10 @@ Automatic security updates are already on by default in Ubuntu Server, so the sc
 
 | File | Lands at | Purpose |
 |---|---|---|
-| `home/dot_bash_aliases` | `~/.bash_aliases` | Turns on mise in interactive shells. Ubuntu's stock `.bashrc` already loads this file, so `.bashrc` is left alone. |
+| `home/dot_bash_aliases` | `~/.bash_aliases` | Turns on mise in interactive shells, apart from Claude Code's, which keep the shims. Ubuntu's stock `.bashrc` already loads this file, so `.bashrc` is left alone. |
 | `home/dot_bash_profile` | `~/.bash_profile` | Puts mise-managed tools on `PATH` for programs that never open an interactive shell, such as the VS Code server, along with global pnpm packages, and stops npm running install scripts |
 | `home/dot_gitconfig` | `~/.gitconfig` | Commit identity and default branch name |
-| `home/dot_config/mise/config.toml` | `~/.config/mise/config.toml` | Global fallback tool versions |
+| `home/dot_config/mise/config.toml` | `~/.config/mise/config.toml` | Global fallback tool versions, and a repo's `.nvmrc` choosing its Node |
 | `home/dot_config/pi-dev-box/vscode-extensions.txt` | `~/.config/pi-dev-box/vscode-extensions.txt` | Extensions the script installs into the VS Code server. After adding one in VS Code, add its ID here too. |
 | `home/dot_claude/CLAUDE.md` | `~/.claude/CLAUDE.md` | Rules Claude Code follows on this machine: where repositories are cloned, which it may touch, how to branch, commit and push, and how to check work in the browser |
 | `home/dot_claude/settings.json` | `~/.claude/settings.json` | Permissions enforced by Claude Code itself: routine commands pre-approved, `sudo`, force-pushes and reading credential files blocked |
