@@ -12,9 +12,14 @@ For the whole site in one fetch (about 100 KB), use `/llms-full.txt`; `/llms.txt
 
 The docs set each project's conventions; this machine's GitHub and safety rules still apply on top. When a page disagrees with the code, tell the user which one looks right.
 
-Use the package manager the repo's lockfile names: `package-lock.json` is npm, `pnpm-lock.yaml` is pnpm. This replaces the machine-wide pnpm rule for repos here. npm on this machine skips install scripts, as pnpm does; when a package fails because its script never ran, ask the user before running `npm rebuild <package>`.
+Use the package manager the repo's lockfile names: `package-lock.json` is npm, `pnpm-lock.yaml` is pnpm. This replaces the machine-wide pnpm rule for repos here. npm on this machine skips install scripts, as pnpm does; when a package fails because its script never ran, ask the user before running `npm rebuild <package>`. The same setting skips a script's `pre` and `post` companions (`pretest`, `prepublishOnly`), so a step a script needs goes in the script itself (`"test": "tz build && vitest run"`).
 
 Start dev servers as tracked background tasks, so the session can stop them by task.
+
+The user's private notes in `~/code/ai-notes` hold facts the docs site lacks or has wrong:
+
+- VPS work (any app deployed there, backups, the server itself): `docker-infrastructure/README.md` and its `research/vps-patterns.md`
+- Jira items, before writing or editing one: `agents/jira.md`
 
 ## Repos cloned here
 

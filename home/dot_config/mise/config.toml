@@ -3,3 +3,7 @@
 node = "lts"
 chezmoi = "latest"
 pnpm = "latest"
+
+[settings]
+# A repo's .nvmrc or .node-version picks its Node, installed on first use.
+idiomatic_version_file_enable_tools = ["node"]

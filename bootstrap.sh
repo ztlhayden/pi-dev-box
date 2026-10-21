@@ -39,6 +39,7 @@ APT_PACKAGES=(git curl ca-certificates build-essential tmux unzip jq htop)
 
 # Libraries Playwright lists for Chromium on Ubuntu 26.04, plus Latin and emoji fonts.
 # Add other font packs (CJK, Thai) when a project needs them.
+# home/dot_config/fontconfig/fonts.conf maps sans-serif, serif and monospace onto these.
 BROWSER_PACKAGES=(
   libasound2t64 libatk-bridge2.0-0t64 libatk1.0-0t64 libatspi2.0-0t64 libcairo2 libcups2t64
   libdbus-1-3 libdrm2 libgbm1 libglib2.0-0t64 libnspr4 libnss3 libpango-1.0-0 libx11-6 libxcb1
@@ -166,24 +167,25 @@ ssh_key() {
 # The private notes repo that Claude Code's global rules point at. Cloned over SSH, so it waits
 # until this machine's key is on GitHub. An existing clone is left alone: it may hold unpushed work.
 NOTES_REPO="${NOTES_REPO:-git@github.com:ztlhayden/ai-notes.git}"
-NOTES_DIR="$HOME/ai-notes"
+NOTES_DIR="$HOME/code/ai-notes"
 
 notes_repo() {
   if [[ -d $NOTES_DIR/.git ]]; then
     log "Notes repo already cloned"
-    return
-  fi
-
-  if [[ -e $NOTES_DIR ]]; then
+  elif [[ -e $NOTES_DIR ]]; then
     warn "$NOTES_DIR exists but is not a git clone; skipping the notes repo"
     return
+  else
+    log "Cloning notes into $NOTES_DIR"
+    if ! GIT_SSH_COMMAND='ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new' \
+      git clone -q "$NOTES_REPO" "$NOTES_DIR"; then
+      warn "could not clone $NOTES_REPO; add this machine's key to GitHub, then re-run"
+      return
+    fi
   fi
 
-  log "Cloning notes into $NOTES_DIR"
-  if ! GIT_SSH_COMMAND='ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new' \
-    git clone -q "$NOTES_REPO" "$NOTES_DIR"; then
-    warn "could not clone $NOTES_REPO; add this machine's key to GitHub, then re-run"
-  fi
+  # The repo's pre-commit hook checks the tickets.
+  git -C "$NOTES_DIR" config core.hooksPath .githooks
 }
 
 # Native installer: a self-updating arm64 binary in ~/.local/bin, independent of the Node version.
