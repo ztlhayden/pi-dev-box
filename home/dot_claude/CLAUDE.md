@@ -67,3 +67,7 @@ One glossary and set of decisions per project folder in `~/code/ai-notes`. See `
 ### Repo maps
 
 A project's notes live in `~/code/ai-notes`, apart from its code, because one project can span several repos. Each project's `README.md` there maps its repos: where work lands, and with what tooling. Read `~/code/ai-notes/agents/repo-map.md` before building from tickets or across repos, and whenever a fact in a map changes.
+
+### Ticket runs
+
+Unattended runs build a feature's `ready-for-agent` tickets with worker agents: `/ticket-run <run sheet>` starts one, `/run-retro` measures it afterwards. The cycle around them, the orchestrator brief and the four role briefs are in `~/code/ai-notes/agents/run-cycle.md` and `agents/run-briefs/`. A ticket turns `ready-for-agent` only after `~/code/ai-notes/agents/ticket-checklist.md`.
