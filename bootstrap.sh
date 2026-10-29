@@ -188,6 +188,26 @@ notes_repo() {
   git -C "$NOTES_DIR" config core.hooksPath .githooks
 }
 
+# npm here skips install scripts, so husky's `prepare` never sets a clone's hooks path, and a clone
+# moved since husky last ran keeps the old absolute path, which git skips without a word. Point each
+# clone with a husky folder at its own, absolutely, so its worktrees share it.
+repo_hooks() {
+  local repo
+  for repo in "$HOME"/code/*/*; do
+    [[ -d $repo/.husky && -d $repo/.git ]] || continue
+    if [[ ! -d $repo/.husky/_ ]]; then
+      if [[ -x $repo/node_modules/.bin/husky ]]; then
+        (cd "$repo" && ./node_modules/.bin/husky >/dev/null)
+      else
+        warn "$repo: install its packages, then re-run to set up its git hooks"
+        continue
+      fi
+    fi
+    git -C "$repo" config core.hooksPath "$repo/.husky/_"
+    log "Git hooks on for $repo"
+  done
+}
+
 # Native installer: a self-updating arm64 binary in ~/.local/bin, independent of the Node version.
 claude_code() {
   if has claude || [[ -x $HOME/.local/bin/claude ]]; then
@@ -427,6 +447,7 @@ main() {
   dotfiles
   ssh_key
   notes_repo
+  repo_hooks
   claude_code
   playwright_cli
   chromium_sandbox
