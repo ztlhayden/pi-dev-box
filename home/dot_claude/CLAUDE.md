@@ -70,4 +70,4 @@ A project's notes live in `~/code/ai-notes`, apart from its code, because one pr
 
 ### Ticket runs
 
-Unattended runs build a feature's `ready-for-agent` tickets with worker agents: `/ticket-run <run sheet>` starts one, `/run-retro` measures it afterwards. The cycle around them, the orchestrator brief and the four role briefs are in `~/code/ai-notes/agents/run-cycle.md` and `agents/run-briefs/`. A ticket turns `ready-for-agent` only after `~/code/ai-notes/agents/ticket-checklist.md`.
+Unattended runs build a feature's `ready-for-agent` tickets with worker agents: `/run-sheet <feature folder>` drafts the run's sheet, `/ticket-run <run sheet>` starts the run, `/run-retro` measures it afterwards. The cycle around them, the orchestrator brief and the four role briefs are in `~/code/ai-notes/agents/run-cycle.md` and `agents/run-briefs/`. A ticket turns `ready-for-agent` only after `~/code/ai-notes/agents/ticket-checklist.md`.
