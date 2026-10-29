@@ -36,16 +36,11 @@ The `ztlhayden/ai-notes` repository (cloned at `~/code/ai-notes`) is the excepti
 
 - Do not use `sudo`. System-level changes belong in `bootstrap.sh` in the pi-dev-box repo.
 - Do not read anything under `~/.ssh`.
-- Change files with the Edit and Write tools; a hook blocks in-place shell rewrites (`sed -i`, scripts that write the file back).
+- Change files with the Edit and Write tools: Read a file before you Edit it (Edit refuses a file you have only seen through `cat` or `sed -n`), one Edit per replacement, `replace_all` for a repeated one, Write for a new or whole file. Conflict markers: load the `resolving-merge-conflicts` skill. A hook blocks in-place shell rewrites (`sed -i`, scripts that write the file back).
+- A check or server you started as a background task: wait for its notification; `sleep` is refused.
 - Use the package manager the project's repo map names (its Tooling column); pnpm where it names none. If a package manager asks to approve a package's install script, ask the user first.
 - Give each new git worktree its own install, with the repo's package manager (`pnpm install`, or `npm ci` where the lockfile is npm's). Vite's dev server refuses files outside the worktree, so a `node_modules` linked from the main checkout breaks the page's scripts.
-- `playwright-cli` (see its skill) drives a headless Chromium for checking your own work on logged-out pages: a local dev server, an HTML file or artifact, a public site. Pages behind the user's logins stay with Claude in Chrome on their laptop, so ask the user. `bootstrap.sh` pins its version; if the command is missing, ask the user to run that script rather than installing it yourself.
-  - Use your own named session (`-s=<repo-or-worktree>`) and close it when done: every agent on the machine shares the sessions.
-  - Serve local files over HTTP; the CLI refuses `file://` URLs. Start `python3 -m http.server <port> --bind 127.0.0.1 --directory <folder>` as a tracked background task, open `http://127.0.0.1:<port>/`, and stop the server when done.
-  - Check at Tailwind v4's default breakpoints: phone 390×844 (below `sm`), tablet 768×1024 (`md`), desktop 1280×800 (`xl`). In a project with its own breakpoints, pick widths inside its ranges. All three sizes when a change touches layout; phone alone for a small change.
-  - A repo's own browser tests can run on this Chromium: `$CHROMIUM_PATH` holds its path, for Playwright's `executablePath`. Leave `playwright install` unrun: it can delete other Chromium builds, breaking playwright-cli.
-  - Screenshots taken to check your work are temporary; the CLI saves them under `~/.cache/playwright-cli/`.
-  - Keep a screenshot for documentation when the user or a ticket asks, or when one would help a reader. Save it with `--filename` next to the doc that uses it, named for what it shows. Some repos are public: check nothing private is visible before committing it.
+- Browser checks of your own work use `playwright-cli` (its skill). Before the first browser command read `~/.claude/skills/playwright-cli/references/this-machine.md`: which browser, sessions, local servers, sizes and screenshots on this machine.
 
 ## Agent skills
 

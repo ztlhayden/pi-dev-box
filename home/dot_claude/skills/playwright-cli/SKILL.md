@@ -6,6 +6,8 @@ allowed-tools: Bash(playwright-cli:*) Bash(npx playwright:*) Bash(npx --no-insta
 
 # Browser Automation with playwright-cli
 
+On this Pi, read [`references/this-machine.md`](references/this-machine.md) first: which browser, sessions, local servers, sizes and screenshots here.
+
 ## Quick start
 
 ```bash
