@@ -48,7 +48,13 @@ Shared by every project on this machine. The files are in the private notes repo
 
 ### Issue tracker
 
-Local markdown tickets under `~/code/ai-notes/<project>/tickets/`. See `~/code/ai-notes/agents/issue-tracker.md`.
+Local markdown tickets under `~/code/ai-notes/<project>/tickets/`; finished features move to `tickets/archive/`. See `~/code/ai-notes/agents/issue-tracker.md`.
+
+Helpers in `~/code/ai-notes/agents/` keep reads short:
+
+- `check-tickets.py --summary`: one line per feature with its count of each status. Start a survey here instead of reading tickets.
+- `ticket.py show <ticket or feature folder>`: tickets with all but the last comment hidden, for surveys only. Read the whole file before working on a ticket: its comments hold open questions, branches and handoff notes.
+- `ticket.py refs <ticket or feature folder>`: the tickets it blocks and the files that link to it, before moving or renaming one.
 
 ### Triage labels
 
