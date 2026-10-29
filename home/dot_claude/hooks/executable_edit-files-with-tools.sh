@@ -16,8 +16,11 @@ if grep -Eq '\b(python3?|node)\b' <<<"$cmd" &&
 fi
 $scripted || exit 0
 
-# Scratch work in /tmp is fine: a script that names /tmp and no other path gets through.
-others=$(grep -Eo "(~|\.{0,2})/[^[:space:]'\"]+" <<<"$cmd" | grep -Ev '^/tmp/' || true)
+# Scratch work in /tmp is fine: a script that names /tmp and no other path gets through. A path
+# starts a token (after a space, =, quote, bracket or redirect), so a sed expression such as
+# `s/old/new/` is not one, and /dev/null is not a file being written.
+others=$(grep -Eo "(^|[[:space:]=<>(\"'])(~|\.{0,2})/[^[:space:]'\"]+" <<<"$cmd" \
+  | sed -E "s/^[[:space:]=<>(\"']//" | grep -Ev '^(/tmp|/dev)/' || true)
 [[ -z $others ]] && grep -q '/tmp/' <<<"$cmd" && exit 0
 
 jq -n '{hookSpecificOutput: {
