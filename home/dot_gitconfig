@@ -3,3 +3,7 @@
 	email = 10334147+ztlhayden@users.noreply.github.com
 [init]
 	defaultBranch = main
+# GitHub ssh over port 443: port 22 often times out from this network
+[url "ssh://git@ssh.github.com:443/"]
+	insteadOf = git@github.com:
+	insteadOf = ssh://git@github.com/
