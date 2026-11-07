@@ -249,6 +249,18 @@ skills_repo() {
     fi
   done
   log "Skills linked from $SKILLS_DIR"
+
+  # The issue helper as a command, for surveys by hand: `issues survey`, `issues chain 20`.
+  local helper="$SKILLS_DIR/skills/project-notes/scripts/issues.py" bin="$HOME/.local/bin/issues"
+  if [[ -f $helper ]]; then
+    mkdir -p "$HOME/.local/bin"
+    if [[ -L $bin || ! -e $bin ]]; then
+      ln -sfn "$helper" "$bin"
+      log "Linked the issue helper as $bin"
+    else
+      warn "$bin exists and is not a link; leaving it"
+    fi
+  fi
 }
 
 # npm here skips install scripts, so husky's `prepare` never sets a clone's hooks path, and a clone
