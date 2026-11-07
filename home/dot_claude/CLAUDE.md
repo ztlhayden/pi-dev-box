@@ -50,6 +50,12 @@ Shared by every project on this machine. The files are in the private notes repo
 
 Local markdown tickets under `~/code/ai-notes/<project>/tickets/`; finished features move to `tickets/archive/`. See `~/code/ai-notes/agents/issue-tracker.md`.
 
+Tickets are moving to GitHub issues on the private `ztlhayden/ai-notes`; some features are there already. When the user refers to a ticket, by number, link, title or feature name:
+
+- Look on GitHub first (`gh issue view <n> -R ztlhayden/ai-notes --comments`, or `gh issue list -R ztlhayden/ai-notes --search '<words>'`), then the markdown tickets. The repo is private: read it with `gh`, never by fetching the link.
+- A bare `#13` names an ai-notes ticket when the user calls it a ticket or the session is in ai-notes. In a code repo it may be that repo's own issue or pull request, and "PR #41" always is. If it's unclear, check both and say which you found.
+- Before working on an issue, read the Pilot section of `issue-tracker.md`: labels, claiming, triage and blockers.
+
 Helpers in `~/code/ai-notes/agents/` keep reads short:
 
 - `check-tickets.py --summary`: one line per feature with its count of each status. Start a survey here instead of reading tickets.
