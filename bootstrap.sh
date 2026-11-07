@@ -194,6 +194,27 @@ notes_repo() {
 SKILLS_REPO="${SKILLS_REPO:-git@github.com:ztlhayden/hayden-skills.git}"
 SKILLS_DIR="$HOME/code/ztlhayden/hayden-skills"
 
+# Skills chezmoi used to install from this repo, each a lone SKILL.md, by the sha256 of every
+# version it shipped. chezmoi leaves a removed file in place, so a folder holding exactly one of
+# these is that old copy, and is replaced by the link. Any other folder is left alone.
+RETIRED_SKILLS=(
+  "run-sheet ac3f91c90e0503e17436b20fe4a8322fe671f1259fed924fd9cec71c3fbefc5d"
+  "ticket-run 0d74e2b5d83b6b3e24aa594efc98dcd191b7e768b6f1110663d504a7b6b7c632"
+  "run-retro 6122528d29fa472299af60ce372566cbe78887127cb89084b4a02c908f7728df"
+)
+
+# True when $1 (a folder in ~/.claude/skills named $2) is a retired chezmoi copy.
+retired_copy() {
+  local dir=$1 name=$2 entry sum
+  [[ ! -L $dir/SKILL.md && -f $dir/SKILL.md ]] || return 1
+  [[ "$(find "$dir" -mindepth 1 -maxdepth 1 | wc -l)" -eq 1 ]] || return 1
+  sum=$(sha256sum "$dir/SKILL.md" | cut -d' ' -f1)
+  for entry in "${RETIRED_SKILLS[@]}"; do
+    [[ $entry == "$name $sum" ]] && return 0
+  done
+  return 1
+}
+
 skills_repo() {
   if [[ -d $SKILLS_DIR/.git ]]; then
     log "Skills repo already cloned"
@@ -216,6 +237,11 @@ skills_repo() {
     skill=${skill%/}
     name=$(basename "$skill")
     link="$HOME/.claude/skills/$name"
+    if [[ ! -L $link && -d $link ]] && retired_copy "$link" "$name"; then
+      log "Replacing the old chezmoi copy of $name with a link"
+      rm -- "$link/SKILL.md"
+      rmdir -- "$link"
+    fi
     if [[ -L $link || ! -e $link ]]; then
       ln -sfn "$skill" "$link"
     elif [[ "$(readlink -f "$link")" != "$skill" ]]; then
