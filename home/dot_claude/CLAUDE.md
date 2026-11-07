@@ -28,7 +28,7 @@ Three repositories are the exception: agents own them, and may push to `main` wi
 
 - `ztlhayden/ai-notes`, cloned at `~/code/ai-notes`: private. Work on its `main` branch.
 - `ztlhayden/hayden-skills`, cloned at `~/code/ztlhayden/hayden-skills`: public, so nothing from the notes repo (names, paths, ticket or run details) goes in it. Work on its `main` branch.
-- `ztlhayden/pi-dev-box`, cloned at `~/code/ztlhayden/pi-dev-box`: this machine's setup. Make the change on a branch in a worktree, check it (`bash -n`, a dry run where one exists), then push it to `main`. `main` is what `chezmoi apply` puts in `~/.claude`, so say in the report what changes for the machine.
+- `ztlhayden/pi-dev-box`, cloned at `~/code/ztlhayden/pi-dev-box`: this machine's setup. Make the change on a branch in a worktree, check it (`bash -n`, a dry run where one exists), then push it to `main` and apply it: `chezmoi git -- pull --ff-only`, read `chezmoi diff`, then `chezmoi apply` (or the matching step of `bootstrap.sh` for what chezmoi doesn't manage). Say in the report what changed for the machine.
 
 ## Commits and pull requests
 
