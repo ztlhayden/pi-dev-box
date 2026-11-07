@@ -6,7 +6,7 @@ This is a Raspberry Pi dev box. Sessions here often run unattended, with the use
 
 Repositories live in `~/code`, cloned by GitHub owner:
 
-- `~/code/ztlhayden/`: the user's personal account. `pi-dev-box` is this machine's setup: bootstrap script and the dotfiles chezmoi applies, including this file. Change it in this clone, on a branch; chezmoi keeps its own read-only copy in `~/.local/share/chezmoi`.
+- `~/code/ztlhayden/`: the user's personal account. `pi-dev-box` is this machine's setup: bootstrap script and the dotfiles chezmoi applies, including this file. Change it in this clone, on a branch; chezmoi keeps its own read-only copy in `~/.local/share/chezmoi`. `hayden-skills` is the user's public skills (`project-notes`, `run-sheet`, `ticket-run`, `run-retro`), linked into `~/.claude/skills`; change them in this clone.
 - `~/code/Indy-Center/`: the Indy-Center organisation, shared with the team. Its own `CLAUDE.md` lists the repos.
 - `~/code/ai-notes`: the user's private notes repo (see below).
 
@@ -24,7 +24,10 @@ This machine's SSH key can reach every repository on the user's account, includi
 - Push in the foreground, one branch per command, under `timeout`, and check its output. Pushes to GitHub from this machine sometimes stall; retry a stalled one rather than waiting on it in the background.
 - Ask before opening a pull request.
 
-The `ztlhayden/ai-notes` repository (cloned at `~/code/ai-notes`) is the exception: agents own it. Work on its `main` branch and push to `main` without asking. The rule against force-pushing still applies.
+Two repositories are the exception: agents own them. Work on their `main` branch and push to `main` without asking. The rule against force-pushing still applies.
+
+- `ztlhayden/ai-notes`, cloned at `~/code/ai-notes`: private.
+- `ztlhayden/hayden-skills`, cloned at `~/code/ztlhayden/hayden-skills`: public, so nothing from the notes repo (names, paths, ticket or run details) goes in it.
 
 ## Commits and pull requests
 
@@ -44,18 +47,18 @@ The `ztlhayden/ai-notes` repository (cloned at `~/code/ai-notes`) is the excepti
 
 ## Agent skills
 
-Shared by every project on this machine. The files are in the private notes repo, `~/code/ai-notes`.
+Shared by every project on this machine. The notes themselves are in the private notes repo, `~/code/ai-notes`; the conventions and scripts are the `project-notes` skill, `~/.claude/skills/project-notes/`.
 
 ### Issue tracker
 
-Tickets are GitHub issues on the private `ztlhayden/ai-notes`; a feature is a milestone, and its spec stays a file in `~/code/ai-notes/<project>/tickets/`. Before working on an issue, read `~/code/ai-notes/agents/issue-tracker.md`: labels, claiming, triage, blockers and the board. Features not yet moved stay markdown tickets under `tickets/` until the migration; that file's last section covers them.
+Tickets are GitHub issues on the private `ztlhayden/ai-notes`; a feature is a milestone, and its spec stays a file in `~/code/ai-notes/<project>/tickets/`. Before working on an issue, read `~/.claude/skills/project-notes/issue-tracker.md`: labels, claiming, triage, blockers and the board. Features not yet moved stay markdown tickets under `tickets/` until the migration; that file covers them too, with `ticket.py` and `check-tickets.py` beside `issues.py` in `~/.claude/skills/project-notes/scripts/`.
 
 When the user refers to a ticket, by number, link, title or feature name:
 
-- Look on GitHub first (`python3 ~/code/ai-notes/agents/issues.py show <n>`, or `gh issue list -R ztlhayden/ai-notes --search '<words>'`), then the markdown tickets. The repo is private: read it with `gh` or the helper, never by fetching the link.
+- Look on GitHub first (`python3 ~/.claude/skills/project-notes/scripts/issues.py show <n>`, or `gh issue list -R ztlhayden/ai-notes --search '<words>'`), then the markdown tickets. The repo is private: read it with `gh` or the helper, never by fetching the link.
 - A bare `#13` names an ai-notes ticket when the user calls it a ticket or the session is in ai-notes. In a code repo it may be that repo's own issue or pull request, and "PR #41" always is. If it's unclear, check both and say which you found.
 
-`~/code/ai-notes/agents/issues.py` keeps reads short:
+`python3 ~/.claude/skills/project-notes/scripts/issues.py` keeps reads short, from any folder:
 
 - `survey [<milestone>]`: one line per milestone with its count of each status, and the issues an agent can start. Start a survey here instead of reading issues.
 - `show <n>`: an issue with all but the last comment folded, for surveys only. Read it whole (`show --all <n>`) before working on it: its comments hold open questions, branches and handoff notes.
@@ -63,16 +66,16 @@ When the user refers to a ticket, by number, link, title or feature name:
 
 ### Triage labels
 
-The five default roles, kept as a `status:` label on each issue (`wontfix` is closed as not planned). See `~/code/ai-notes/agents/triage-labels.md`.
+The five default roles, kept as a `status:` label on each issue (`wontfix` is closed as not planned). See `~/.claude/skills/project-notes/triage-labels.md`.
 
 ### Domain docs
 
-One glossary and set of decisions per project folder in `~/code/ai-notes`. See `~/code/ai-notes/agents/domain.md`.
+One glossary and set of decisions per project folder in `~/code/ai-notes`; its `README.md` lists the subjects that share one folder. See `~/.claude/skills/project-notes/domain.md`.
 
 ### Repo maps
 
-A project's notes live in `~/code/ai-notes`, apart from its code, because one project can span several repos. Each project's `README.md` there maps its repos: where work lands, and with what tooling. Read `~/code/ai-notes/agents/repo-map.md` before building from tickets or across repos, and whenever a fact in a map changes.
+A project's notes live in `~/code/ai-notes`, apart from its code, because one project can span several repos. Each project's `README.md` there maps its repos: where work lands, and with what tooling. Read `~/.claude/skills/project-notes/repo-map.md` before building from tickets or across repos, and whenever a fact in a map changes.
 
 ### Ticket runs
 
-Unattended runs build a feature's `ready-for-agent` tickets with worker agents: `/run-sheet <feature folder>` drafts the run's sheet, `/ticket-run <run sheet>` starts the run, `/run-retro` measures it afterwards. The cycle around them, the orchestrator brief and the four role briefs are in `~/code/ai-notes/agents/run-cycle.md` and `agents/run-briefs/`. A ticket turns `ready-for-agent` only after `~/code/ai-notes/agents/ticket-checklist.md`.
+Unattended runs build a feature's `ready-for-agent` issues with worker agents: `/run-sheet <milestone or feature folder>` drafts the run's sheet, `/ticket-run <run sheet>` starts the run, `/run-retro` measures it afterwards. The cycle around them is `~/.claude/skills/ticket-run/run-cycle.md`; the orchestrator and role briefs are in `~/.claude/skills/ticket-run/briefs/`. A ticket turns `ready-for-agent` only after `~/.claude/skills/project-notes/ticket-checklist.md`.

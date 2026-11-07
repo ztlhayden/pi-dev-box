@@ -184,8 +184,45 @@ notes_repo() {
     fi
   fi
 
-  # The repo's pre-commit hook checks the tickets.
+  # The repo's pre-commit hook checks the tickets, with the checker from the skills repo.
   git -C "$NOTES_DIR" config core.hooksPath .githooks
+}
+
+# The public skills repo: ticket-run skills and the notes conventions. Linked into
+# ~/.claude/skills from a clone rather than copied, so a retro's brief changes land in the clone
+# and get pushed. Cloned over SSH for that push. An existing clone is left alone.
+SKILLS_REPO="${SKILLS_REPO:-git@github.com:ztlhayden/hayden-skills.git}"
+SKILLS_DIR="$HOME/code/ztlhayden/hayden-skills"
+
+skills_repo() {
+  if [[ -d $SKILLS_DIR/.git ]]; then
+    log "Skills repo already cloned"
+  elif [[ -e $SKILLS_DIR ]]; then
+    warn "$SKILLS_DIR exists but is not a git clone; skipping the skills repo"
+    return
+  else
+    log "Cloning skills into $SKILLS_DIR"
+    mkdir -p "$(dirname "$SKILLS_DIR")"
+    if ! GIT_SSH_COMMAND='ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new' \
+      git clone -q "$SKILLS_REPO" "$SKILLS_DIR"; then
+      warn "could not clone $SKILLS_REPO; add this machine's key to GitHub, then re-run"
+      return
+    fi
+  fi
+
+  local skill name link
+  mkdir -p "$HOME/.claude/skills"
+  for skill in "$SKILLS_DIR"/skills/*/; do
+    skill=${skill%/}
+    name=$(basename "$skill")
+    link="$HOME/.claude/skills/$name"
+    if [[ -L $link || ! -e $link ]]; then
+      ln -sfn "$skill" "$link"
+    elif [[ "$(readlink -f "$link")" != "$skill" ]]; then
+      warn "$link is a folder, not a link to $skill; remove it, then re-run"
+    fi
+  done
+  log "Skills linked from $SKILLS_DIR"
 }
 
 # npm here skips install scripts, so husky's `prepare` never sets a clone's hooks path, and a clone
@@ -447,6 +484,7 @@ main() {
   dotfiles
   ssh_key
   notes_repo
+  skills_repo
   repo_hooks
   claude_code
   playwright_cli

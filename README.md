@@ -40,7 +40,8 @@ A few steps involve credentials or details that are kept out of this repo, so th
 | mise | From mise's apt repository | One tool for Node and other CLI versions; reads each project's own version file |
 | Dotfiles | chezmoi applies this repo, then mise installs the tools listed in its config | Config lives here, not on the machine |
 | SSH key | Generates a GitHub key for this machine if it has none, and prints the public half | One key per machine, so any one can be revoked alone |
-| Notes repo | Clones the private `ztlhayden/ai-notes` into `~/code/ai-notes`; leaves an existing clone alone | Claude Code's global rules point there for project notes, tickets and agent-skill settings; skipped until the machine's key is on GitHub |
+| Notes repo | Clones the private `ztlhayden/ai-notes` into `~/code/ai-notes`; leaves an existing clone alone | Claude Code's global rules point there for project notes and tickets; skipped until the machine's key is on GitHub |
+| Skills repo | Clones the public [`ztlhayden/hayden-skills`](https://github.com/ztlhayden/hayden-skills) into `~/code/ztlhayden/hayden-skills` and links each of its skills into `~/.claude/skills`; leaves an existing clone alone, and warns about a skill folder that is not a link | The ticket-run skills and the notes conventions they use, kept public so others can install them; linked rather than copied so a retro's brief changes land in the clone and get pushed |
 | Claude Code | Anthropic's native installer | A self-updating arm64 binary that does not depend on which Node version a project pins |
 | Browser for agents | `@playwright/cli` at a pinned version, installed globally with pnpm, then the Chromium build its own Playwright expects | Lets agents open, click through and screenshot logged-out pages to check their own work. Chromium because Google Chrome has no Linux arm64 build. Changing the pin means regenerating the skill in `home/dot_claude/skills/playwright-cli` |
 | Chromium sandbox | An AppArmor profile that lets Playwright's Chromium create user namespaces | Ubuntu allows that only for programs a profile lists; its own profiles cover Chrome and Chromium in `/opt` and `/usr`, not Playwright's copies in `~/.cache` |
@@ -65,9 +66,8 @@ Automatic security updates are already on by default in Ubuntu Server, so the sc
 | `home/dot_config/pi-dev-box/vscode-extensions.txt` | `~/.config/pi-dev-box/vscode-extensions.txt` | Extensions the script installs into the VS Code server. After adding one in VS Code, add its ID here too. |
 | `home/dot_claude/CLAUDE.md` | `~/.claude/CLAUDE.md` | Rules Claude Code follows on this machine: where repositories are cloned, which it may touch, how to branch, commit and push, and how to check work in the browser |
 | `home/dot_claude/settings.json` | `~/.claude/settings.json` | Permissions enforced by Claude Code itself: routine commands pre-approved, `sudo`, force-pushes and reading credential files blocked |
-| `home/dot_claude/hooks/` | `~/.claude/hooks/` | Checks on each shell command: ask before a push to `main` (except in `~/code/ai-notes`), send file edits to the Edit tool rather than `sed -i` or a script, and refuse commands that name a credential file (`~/.ssh`, `~/.npmrc`, `~/.netrc`, `~/.git-credentials`, gh's `hosts.yml`) |
+| `home/dot_claude/hooks/` | `~/.claude/hooks/` | Checks on each shell command: ask before a push to `main` (except in `~/code/ai-notes` and `~/code/ztlhayden/hayden-skills`), send file edits to the Edit tool rather than `sed -i` or a script, and refuse commands that name a credential file (`~/.ssh`, `~/.npmrc`, `~/.netrc`, `~/.git-credentials`, gh's `hosts.yml`) |
 | `home/dot_claude/skills/playwright-cli/` | `~/.claude/skills/playwright-cli/` | The skill that `playwright-cli install --skills claude` generates for the pinned version, kept unedited so it can be regenerated on upgrade; rules for using it on this machine are in `CLAUDE.md` |
-| `home/dot_claude/skills/run-sheet/`, `ticket-run/`, `run-retro/` | `~/.claude/skills/run-sheet/`, `ticket-run/`, `run-retro/` | User-invoked skills for unattended ticket runs, in the order they are used: `/run-sheet <feature folder>` drafts the run's sheet from its ready tickets, `/ticket-run <run sheet>` starts the run from the orchestrator brief in `~/code/ai-notes/agents/run-briefs/`, `/run-retro` measures a finished one with the parsers in `~/code/ai-notes/agents/retro/`. The briefs, template and parsers live in ai-notes; only the entry points are here |
 | `home/dot_playwright/cli.config.json.tmpl` | `~/.playwright/cli.config.json` | Global `playwright-cli` config: Chromium with its sandbox on, and output under `~/.cache/playwright-cli/` so check screenshots stay out of repos |
 | `home/code/Indy-Center/CLAUDE.md` | `~/code/Indy-Center/CLAUDE.md` | Loaded for every Indy Center repo: lists the repos cloned there, points Claude Code at the team docs at tech.flyindycenter.com, and has it use each repo's own package manager, named by its lockfile, rather than the machine-wide pnpm rule |
 
@@ -129,7 +129,7 @@ tmux sessions end when the Pi reboots, so start them again afterwards. Start the
 
 **Commits from the Pi are unsigned.** Signing through a forwarded key would fail whenever I am not connected. Leaving Pi commits unsigned keeps the "Verified" badge meaning that I made the commit myself.
 
-**chezmoi over symlinks.** It supports per-machine templates and can read values from 1Password when applying, which leaves room to manage the laptop from the same repo later.
+**chezmoi over symlinks.** It supports per-machine templates and can read values from 1Password when applying, which leaves room to manage the laptop from the same repo later. The skills from `hayden-skills` are the exception: they are links into its clone, because agents edit and push them.
 
 ## arm64 and Raspberry Pi notes
 

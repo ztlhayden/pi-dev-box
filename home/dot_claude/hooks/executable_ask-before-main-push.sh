@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# PreToolUse hook for Bash: ask before a push that names main or master, except in ~/code/ai-notes,
-# which agents own. Best effort: it reads the repo from `git -C <dir>`, a leading `cd <dir>`,
+# PreToolUse hook for Bash: ask before a push that names main or master, except in ~/code/ai-notes
+# and ~/code/ztlhayden/hayden-skills, which agents own. Best effort: it reads the repo from `git -C <dir>`, a leading `cd <dir>`,
 # or the session's working directory. Anything it cannot place counts as another repo.
 set -euo pipefail
 
@@ -21,10 +21,10 @@ dir=${dir/#\~/$HOME}
 [[ $dir == /* ]] || dir="$cwd/$dir"
 
 top=$(git -C "$dir" rev-parse --show-toplevel 2>/dev/null || true)
-[[ $top == "$HOME/code/ai-notes" ]] && exit 0
+[[ $top == "$HOME/code/ai-notes" || $top == "$HOME/code/ztlhayden/hayden-skills" ]] && exit 0
 
 jq -n '{hookSpecificOutput: {
   hookEventName: "PreToolUse",
   permissionDecision: "ask",
-  permissionDecisionReason: "Push to main or master needs a specific OK (ai-notes is exempt)"
+  permissionDecisionReason: "Push to main or master needs a specific OK (ai-notes and hayden-skills are exempt)"
 }}'
