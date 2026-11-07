@@ -8,8 +8,12 @@ Pi's, not playwright-cli's.
   user's logins stay with Claude in Chrome on their laptop, so ask the user.
 - **Installed by `bootstrap.sh`**, which pins its version. If the command is missing, ask the user
   to run that script rather than installing it yourself.
-- **Your own named session**, `-s=<repo-or-worktree>`, closed when you are done: every agent on
-  the machine shares the sessions.
+- **Your own named session**, `-s=<repo-or-worktree>`, closed when you are done. Sessions belong
+  to the directory you run the command from: run every command for a session from that same
+  directory, or `playwright-cli list` shows no browsers and the session seems gone.
+- **After `close`**, a `cliDaemon` for the session can stay alive with its headless Chromium.
+  Check `ps -eo pid,args | grep cliDaemon` and stop a leftover one with `kill <pid>`, never
+  `pkill -f` (it matches its own shell).
 - **Local files go over HTTP**; the CLI refuses `file://` URLs. Start
   `python3 -m http.server <port> --bind 127.0.0.1 --directory <folder>` as a tracked background
   task, open `http://127.0.0.1:<port>/`, and stop the server when done. A Next.js dev server is
@@ -24,4 +28,4 @@ Pi's, not playwright-cli's.
 - **Screenshots** taken to check your work are temporary; the CLI saves them under
   `~/.cache/playwright-cli/`. Keep one for documentation when the user or a ticket asks, or when
   one would help a reader: save it with `--filename` next to the doc that uses it, named for what
-  it shows. Some repos are public: check nothing private is visible before committing it.
+  it shows. A `--filename` path is relative to the current directory, not the cache folder. Some repos are public: check nothing private is visible before committing it.
