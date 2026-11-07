@@ -48,23 +48,22 @@ Shared by every project on this machine. The files are in the private notes repo
 
 ### Issue tracker
 
-Local markdown tickets under `~/code/ai-notes/<project>/tickets/`; finished features move to `tickets/archive/`. See `~/code/ai-notes/agents/issue-tracker.md`.
+Tickets are GitHub issues on the private `ztlhayden/ai-notes`; a feature is a milestone, and its spec stays a file in `~/code/ai-notes/<project>/tickets/`. Before working on an issue, read `~/code/ai-notes/agents/issue-tracker.md`: labels, claiming, triage, blockers and the board. Features not yet moved stay markdown tickets under `tickets/` until the migration; that file's last section covers them.
 
-Tickets are moving to GitHub issues on the private `ztlhayden/ai-notes`; some features are there already. When the user refers to a ticket, by number, link, title or feature name:
+When the user refers to a ticket, by number, link, title or feature name:
 
-- Look on GitHub first (`gh issue view <n> -R ztlhayden/ai-notes --comments`, or `gh issue list -R ztlhayden/ai-notes --search '<words>'`), then the markdown tickets. The repo is private: read it with `gh`, never by fetching the link.
+- Look on GitHub first (`python3 ~/code/ai-notes/agents/issues.py show <n>`, or `gh issue list -R ztlhayden/ai-notes --search '<words>'`), then the markdown tickets. The repo is private: read it with `gh` or the helper, never by fetching the link.
 - A bare `#13` names an ai-notes ticket when the user calls it a ticket or the session is in ai-notes. In a code repo it may be that repo's own issue or pull request, and "PR #41" always is. If it's unclear, check both and say which you found.
-- Before working on an issue, read the Pilot section of `issue-tracker.md`: labels, claiming, triage and blockers.
 
-Helpers in `~/code/ai-notes/agents/` keep reads short:
+`~/code/ai-notes/agents/issues.py` keeps reads short:
 
-- `check-tickets.py --summary`: one line per feature with its count of each status. Start a survey here instead of reading tickets.
-- `ticket.py show <ticket or feature folder>`: tickets with all but the last comment hidden, for surveys only. Read the whole file before working on a ticket: its comments hold open questions, branches and handoff notes.
-- `ticket.py refs <ticket or feature folder>`: the tickets it blocks and the files that link to it, before moving or renaming one.
+- `survey [<milestone>]`: one line per milestone with its count of each status, and the issues an agent can start. Start a survey here instead of reading issues.
+- `show <n>`: an issue with all but the last comment folded, for surveys only. Read it whole (`show --all <n>`) before working on it: its comments hold open questions, branches and handoff notes.
+- `chain <n>`: what it waits on, to the end of its *blocked by* links.
 
 ### Triage labels
 
-The five default roles, kept as a `Status:` line in each ticket. See `~/code/ai-notes/agents/triage-labels.md`.
+The five default roles, kept as a `status:` label on each issue (`wontfix` is closed as not planned). See `~/code/ai-notes/agents/triage-labels.md`.
 
 ### Domain docs
 
