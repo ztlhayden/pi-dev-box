@@ -16,7 +16,10 @@
       "Bash(pnpm install *)",
       "Bash(pnpm run *)",
       "Bash(pnpm test *)",
-      "Bash(pnpm exec *)"
+      "Bash(pnpm exec *)",
+      "Bash(issues *)",
+      "Bash(python3 ~/.claude/skills/project-notes/scripts/*)",
+      "Bash(python3 /home/hayden/.claude/skills/project-notes/scripts/*)"
     ],
     "deny": [
       "Bash(sudo *)",
@@ -36,9 +39,18 @@
       {
         "matcher": "Bash",
         "hooks": [
-          { "type": "command", "command": "~/.claude/hooks/ask-before-main-push.sh" },
-          { "type": "command", "command": "~/.claude/hooks/edit-files-with-tools.sh" },
-          { "type": "command", "command": "~/.claude/hooks/block-credential-reads.sh" }
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/ask-before-main-push.sh"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/edit-files-with-tools.sh"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/block-credential-reads.sh"
+          }
         ]
       }
     ]
