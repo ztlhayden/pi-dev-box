@@ -19,7 +19,11 @@
       "Bash(pnpm exec *)",
       "Bash(issues *)",
       "Bash(python3 ~/.claude/skills/project-notes/scripts/*)",
-      "Bash(python3 /home/hayden/.claude/skills/project-notes/scripts/*)"
+      "Bash(python3 /home/hayden/.claude/skills/project-notes/scripts/*)",
+      "Bash(git worktree add *)",
+      "Bash(git worktree list *)",
+      "EnterWorktree",
+      "Bash(gh pr create --draft *)"
     ],
     "deny": [
       "Bash(sudo *)",
