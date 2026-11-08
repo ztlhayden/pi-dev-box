@@ -184,8 +184,10 @@ notes_repo() {
     fi
   fi
 
-  # The repo's pre-commit hook checks the tickets, with the checker from the skills repo.
-  git -C "$NOTES_DIR" config core.hooksPath .githooks
+  # The repo's old ticket-checking hook is gone; drop a clone's setting that pointed at it.
+  if [[ $(git -C "$NOTES_DIR" config --get core.hooksPath) == ?(*/).githooks ]]; then
+    git -C "$NOTES_DIR" config --unset core.hooksPath
+  fi
 }
 
 # The public skills repo: ticket-run skills and the notes conventions. Linked into
