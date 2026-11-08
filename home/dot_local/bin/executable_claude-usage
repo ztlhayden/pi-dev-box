@@ -1,0 +1,555 @@
+#!/usr/bin/python3
+"""Record Claude Code usage on this machine in the notes repo, from Claude Code's session logs.
+
+Reads ~/.claude/projects/**/*.jsonl and writes, under usage/ in the notes repo:
+  YYYY-MM.csv           one row per day, project and model
+  YYYY-MM-windows.csv   one row per 5-hour usage window and model
+  YYYY-MM-limits.csv    one row per usage-limit hit
+  YYYY-MM-summary.md    weekly totals, peak windows, limit hits, model mix
+Only counts, model names and project folder names leave the logs: no prompts, no file contents.
+usage/README.md in the notes repo says what each column means.
+
+  claude-usage update [--repo DIR] [--no-git]
+"""
+import argparse
+import csv
+import json
+import os
+import subprocess
+import sys
+from collections import defaultdict
+from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+TOKEN_FIELDS = ["input", "output", "cache_write_5m", "cache_write_1h", "cache_read"]
+WINDOW = timedelta(hours=5)
+
+
+@dataclass
+class Request:
+    time: datetime  # UTC
+    session: str
+    cwd: str
+    model: str
+    input: int
+    output: int
+    cache_write_5m: int
+    cache_write_1h: int
+    cache_read: int
+    web_searches: int = 0
+    speed: str = "standard"
+    geo: str = "global"
+
+
+@dataclass
+class LimitHit:
+    time: datetime  # UTC
+    cwd: str
+    model: str  # the last model the session used before the hit
+    limit: str  # five_hour, seven_day, ...
+    resets_at: datetime
+
+
+# Published API prices, USD per million tokens: base input, 5-minute cache write, 1-hour cache
+# write, cache hit, output. From https://platform.claude.com/docs/en/about-claude/pricing, read
+# 2026-11-08; usage/README.md in the notes repo copies this table and must change with it.
+PRICES = {
+    "claude-fable-5-1": (10, 12.50, 20, 0.25, 50),
+    "claude-opus-5-5": (4, 5, 8, 0.20, 20),
+    "claude-sonnet-5-5": (2, 2.50, 4, 0.10, 10),
+    "claude-haiku-5-5": (0.10, 0.125, 0.20, 0.01, 0.50),
+    "claude-fable-5": (10, 12.50, 20, 1, 50),
+    "claude-opus-5": (5, 6.25, 10, 0.50, 25),
+    "claude-sonnet-5": (2, 2.50, 4, 0.20, 10),
+    "claude-opus-4-8": (5, 6.25, 10, 0.50, 25),
+    "claude-opus-4-7": (5, 6.25, 10, 0.50, 25),
+    "claude-opus-4-6": (5, 6.25, 10, 0.50, 25),
+    "claude-opus-4-5": (5, 6.25, 10, 0.50, 25),
+    "claude-sonnet-4-6": (3, 3.75, 6, 0.30, 15),
+    "claude-sonnet-4-5": (3, 3.75, 6, 0.30, 15),
+    "claude-haiku-4-5": (1, 1.25, 2, 0.10, 5),
+}
+# Haiku 5.5 prompts over 100,000 tokens, cache reads and writes included.
+LONG_PROMPT = {"claude-haiku-5-5": (100_000, (0.50, 0.625, 1, 0.05, 2.50))}
+# Fast mode input and output; cache writes and hits keep their multiples of the fast input price.
+FAST = {"claude-opus-5-5": (8, 40), "claude-opus-5": (10, 50), "claude-opus-4-8": (10, 50)}
+US_INFERENCE = 1.1
+WEB_SEARCH = 10 / 1000
+
+
+def request_cost(r):
+    """What a request would cost at API prices, in USD; None for a model with no price."""
+    base = r.model
+    family, _, suffix = base.rpartition("-")
+    if base not in PRICES and len(suffix) == 8 and suffix.isdigit():
+        base = family  # a dated ID, such as claude-haiku-4-5-20251001
+    if base not in PRICES:
+        return None
+    rates = PRICES[base]
+    prompt = r.input + r.cache_write_5m + r.cache_write_1h + r.cache_read
+    if base in LONG_PROMPT and prompt > LONG_PROMPT[base][0]:
+        rates = LONG_PROMPT[base][1]
+    if r.speed == "fast" and base in FAST:
+        fast_in, fast_out = FAST[base]
+        scale = fast_in / rates[0]
+        rates = (fast_in, rates[1] * scale, rates[2] * scale, rates[3] * scale, fast_out)
+    tokens = (r.input, r.cache_write_5m, r.cache_write_1h, r.cache_read, r.output)
+    cost = sum(n * p for n, p in zip(tokens, rates)) / 1_000_000
+    if r.geo == "us":
+        cost *= US_INFERENCE
+    return cost + r.web_searches * WEB_SEARCH
+
+
+def project_name(cwd, code_root, home):
+    """The repo a session ran in, as its folder under ~/code, with any worktree folded into it.
+
+    Repos sit at ~/code/<owner>/<repo>, or at ~/code/<repo> when that folder is itself a clone.
+    A worktree is either <repo>/.claude/worktrees/<name> or a sibling folder <repo>.<name>.
+    Outside ~/code, only the first folder under home is kept, so nothing deeper leaks out.
+    """
+    code_root, home = Path(code_root), Path(home)
+    path = Path(cwd or "/")
+    parts = path.parts
+    if ".claude" in parts:
+        i = parts.index(".claude")
+        if parts[i + 1:i + 2] == ("worktrees",):
+            path = Path(*parts[:i])
+    try:
+        rel = path.relative_to(code_root).parts
+    except ValueError:
+        try:
+            rel = path.relative_to(home).parts
+        except ValueError:
+            return "other"
+        return "~/" + rel[0] if rel else "~"
+    if not rel:
+        return "~/code"
+    depth = 1 if (code_root / rel[0] / ".git").exists() else 2
+    repo = list(rel[:depth])
+    last = repo[-1]
+    if "." in last:
+        base = last.split(".")[0]
+        if base and (code_root.joinpath(*repo[:-1], base)).is_dir():
+            repo[-1] = base
+    return "/".join(repo)
+
+
+def parse_time(stamp):
+    return datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+
+
+def load(projects_dir):
+    """Every API request in the logs, each once, and every usage-limit rejection.
+
+    A response is logged once per content block, and a resumed or forked session repeats
+    earlier entries, so requests are keyed by message and request ID.
+    """
+    requests, limits = {}, []
+    for path in sorted(Path(projects_dir).glob("**/*.jsonl")):
+        last_model = {}
+        with open(path, errors="replace") as f:
+            for line in f:
+                try:
+                    d = json.loads(line)
+                except ValueError:
+                    continue
+                if d.get("type") != "assistant" or not d.get("timestamp"):
+                    continue
+                msg = d.get("message") or {}
+                session = d.get("sessionId") or ""
+                if d.get("isApiErrorMessage"):
+                    # A plan limit is a refusal naming the limit; other 429s are API throttling.
+                    quota = d.get("quotaLimits") or (d.get("apiErrorParams") or {}).get("rate_limit_info") or {}
+                    if d.get("apiError") != "usage_limit_reached" and quota.get("status") != "rejected":
+                        continue
+                    resets = quota.get("resetsAt")
+                    limits.append(LimitHit(
+                        time=parse_time(d["timestamp"]), cwd=d.get("cwd") or "",
+                        model=last_model.get(session, "unknown"),
+                        limit=quota.get("rateLimitType") or "unknown",
+                        resets_at=datetime.fromtimestamp(resets, timezone.utc) if resets else None))
+                    continue
+                usage = msg.get("usage")
+                model = msg.get("model")
+                if not usage or not model or model == "<synthetic>":
+                    continue
+                last_model[session] = model
+                ids = (msg.get("id"), d.get("requestId"))
+                key = ids if any(ids) else d.get("uuid")
+                if key in requests:
+                    continue
+                created = usage.get("cache_creation") or {}
+                cw1 = created.get("ephemeral_1h_input_tokens") or 0
+                cw5 = created.get("ephemeral_5m_input_tokens")
+                if cw5 is None:
+                    cw5 = (usage.get("cache_creation_input_tokens") or 0) - cw1
+                requests[key] = Request(
+                    time=parse_time(d["timestamp"]), session=session, cwd=d.get("cwd") or "",
+                    model=model,
+                    input=usage.get("input_tokens") or 0,
+                    output=usage.get("output_tokens") or 0,
+                    cache_write_5m=cw5 or 0,
+                    cache_write_1h=cw1,
+                    cache_read=usage.get("cache_read_input_tokens") or 0,
+                    web_searches=(usage.get("server_tool_use") or {}).get("web_search_requests") or 0,
+                    speed=usage.get("speed") or "standard",
+                    geo=usage.get("inference_geo") or "global",
+                )
+    return sorted(requests.values(), key=lambda r: r.time), sorted(limits, key=lambda h: h.time)
+
+
+def stamp(t, tz):
+    return t.astimezone(tz).isoformat(timespec="minutes")
+
+
+class Totals:
+    """Token counts and cost for a group of requests."""
+
+    def __init__(self):
+        self.sessions = set()
+        self.requests = 0
+        self.tokens = dict.fromkeys(TOKEN_FIELDS, 0)
+        self.web_searches = 0
+        self.cost = 0.0
+        self.unpriced = False
+
+    def add(self, r):
+        self.sessions.add(r.session)
+        self.requests += 1
+        for k in TOKEN_FIELDS:
+            self.tokens[k] += getattr(r, k)
+        self.web_searches += r.web_searches
+        cost = request_cost(r)
+        if cost is None:
+            self.unpriced = True
+        else:
+            self.cost += cost
+
+    def row(self):
+        return {"requests": self.requests, **self.tokens, "web_searches": self.web_searches,
+                "cost_usd": "" if self.unpriced else f"{self.cost:.4f}"}
+
+
+COUNT_COLUMNS = ["requests", *TOKEN_FIELDS, "web_searches", "cost_usd"]
+DAILY_COLUMNS = ["date", "project", "model", "sessions", *COUNT_COLUMNS]
+WINDOW_COLUMNS = ["window_start", "window_end", "model", *COUNT_COLUMNS, "limit_hit"]
+LIMIT_COLUMNS = ["time", "limit", "resets_at", "model", "project", "rejected_requests"]
+
+
+def daily_rows(requests, tz, code_root, home):
+    groups = defaultdict(Totals)
+    for r in requests:
+        day = r.time.astimezone(tz).date().isoformat()
+        groups[(day, project_name(r.cwd, code_root, home), r.model)].add(r)
+    return [{"date": day, "project": project, "model": model, "sessions": len(t.sessions), **t.row()}
+            for (day, project, model), t in sorted(groups.items())]
+
+
+def windows(requests):
+    """Usage windows: each opens on the hour of the first request after the last one closed."""
+    spans = []
+    for r in requests:
+        if not spans or r.time >= spans[-1][1]:
+            start = r.time.replace(minute=0, second=0, microsecond=0)
+            spans.append((start, start + WINDOW, []))
+        spans[-1][2].append(r)
+    return spans
+
+
+def window_rows(requests, limits, tz):
+    rows = []
+    for start, end, members in windows(requests):
+        hit = sorted({h.limit for h in limits if start <= h.time < end})
+        by_model = defaultdict(Totals)
+        for r in members:
+            by_model[r.model].add(r)
+        for model, t in sorted(by_model.items()):
+            rows.append({"window_start": stamp(start, tz), "window_end": stamp(end, tz), "model": model,
+                         **t.row(), "limit_hit": " ".join(hit)})
+    return rows
+
+
+def limit_rows(limits, tz, code_root, home):
+    """One row per limit reached: every rejection against the same limit and reset counts once."""
+    hits = {}
+    for h in limits:
+        key = (h.limit, h.resets_at or h.time)
+        if key not in hits:
+            hits[key] = {"time": stamp(h.time, tz), "limit": h.limit,
+                         "resets_at": stamp(h.resets_at, tz) if h.resets_at else "",
+                         "model": h.model, "project": project_name(h.cwd, code_root, home),
+                         "rejected_requests": 0}
+        hits[key]["rejected_requests"] += 1
+    return sorted(hits.values(), key=lambda row: row["time"])
+
+
+def write_csv(path, columns, rows):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=columns, lineterminator="\n")
+        w.writeheader()
+        w.writerows(rows)
+
+
+def by_month(rows, column):
+    months = defaultdict(list)
+    for row in rows:
+        months[row[column][:7]].append(row)
+    return months
+
+
+def read_csv(path):
+    if not path.exists():
+        return []
+    with open(path, newline="") as f:
+        return list(csv.DictReader(f))
+
+
+# Days older than this are left as first recorded: Claude Code deletes old session logs, so a
+# recount of an old day could come up short.
+RECOUNT_DAYS = 7
+
+
+def merge(recorded, fresh, column, today):
+    """Recorded rows, with each day the logs still fully hold replaced by a fresh count.
+
+    A day is recounted when it falls in the last RECOUNT_DAYS days, or was never recorded.
+    Today, still under way, waits for the next run.
+    """
+    oldest = (today - timedelta(days=RECOUNT_DAYS)).isoformat()
+    recorded_days = {row[column][:10] for row in recorded}
+    fresh = [row for row in fresh if row[column][:10] < today.isoformat()]
+    recount = {row[column][:10] for row in fresh
+               if row[column][:10] >= oldest or row[column][:10] not in recorded_days}
+    kept = [row for row in recorded if row[column][:10] not in recount]
+    added = [{k: str(v) for k, v in row.items()} for row in fresh if row[column][:10] in recount]
+    return sorted(kept + added, key=lambda row: tuple(row.values()))
+
+
+def num(row, column):
+    try:
+        return float(row[column] or 0)
+    except (KeyError, ValueError):
+        return 0.0
+
+
+def total_tokens(row):
+    return sum(num(row, k) for k in TOKEN_FIELDS)
+
+
+def millions(n):
+    return f"{n / 1_000_000:,.1f}M"
+
+
+def when(iso):
+    return iso[:16].replace("T", " ")
+
+
+def summary(month, daily, window_list, limit_list):
+    """The month at a glance, from its recorded rows."""
+    title = datetime.strptime(month, "%Y-%m").strftime("%B %Y")
+    cost = sum(num(r, "cost_usd") for r in daily)
+    unpriced = sorted({r["model"] for r in daily if r.get("cost_usd", "") == ""})
+    out = [f"# Claude usage on the Pi, {title}", "",
+           "Written nightly by `claude-usage` from this month's CSV files beside this one. "
+           "Counts only this machine's Claude Code sessions; see README.md for what that leaves out.", "",
+           f"- API-equivalent cost: ${cost:,.2f}",
+           f"- Requests: {sum(num(r, 'requests') for r in daily):,.0f}; "
+           f"tokens: {millions(sum(total_tokens(r) for r in daily))}, "
+           f"of which output {millions(sum(num(r, 'output') for r in daily))}",
+           f"- Days with usage: {len({r['date'] for r in daily})}",
+           f"- Usage-limit hits: {len(limit_list)}"]
+    if unpriced:
+        out.append(f"- Not priced (no published price in the script): {', '.join(unpriced)}")
+
+    def monday(day):
+        d = datetime.strptime(day[:10], "%Y-%m-%d").date()
+        return (d - timedelta(days=d.weekday())).isoformat()
+
+    windows_by_start = defaultdict(lambda: {"cost": 0.0, "tokens": 0.0, "models": set()})
+    for w in window_list:
+        agg = windows_by_start[w["window_start"]]
+        agg["cost"] += num(w, "cost_usd")
+        agg["tokens"] += total_tokens(w)
+        agg["models"].add(w["model"].removeprefix("claude-"))
+    weeks = sorted({monday(r["date"]) for r in daily} | {monday(s) for s in windows_by_start})
+    out += ["", "## Weeks", "",
+            "Monday to Sunday, counting only this month's days. The peak window is the 5-hour window "
+            "with the highest API-equivalent cost, which weighs models roughly as plan limits do.", "",
+            "| Week of | Days | Requests | Tokens | Output | API-equivalent cost | Peak window | Peak window cost | Peak window tokens | Limit hits |",
+            "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |"]
+    for week in weeks:
+        days = [r for r in daily if monday(r["date"]) == week]
+        starts = [s for s in windows_by_start if monday(s) == week]
+        peak = max(starts, key=lambda s: windows_by_start[s]["cost"], default=None)
+        if peak:
+            p = windows_by_start[peak]
+            peak_cells = (f"{when(peak)} ({', '.join(sorted(p['models']))})", f"${p['cost']:,.2f}",
+                          millions(p["tokens"]))
+        else:
+            peak_cells = ("", "", "")
+        hits = sum(1 for h in limit_list if monday(h["time"]) == week)
+        out.append(f"| {week} | {len({r['date'] for r in days})} | {sum(num(r, 'requests') for r in days):,.0f} "
+                   f"| {millions(sum(total_tokens(r) for r in days))} | {millions(sum(num(r, 'output') for r in days))} "
+                   f"| ${sum(num(r, 'cost_usd') for r in days):,.2f} | {' | '.join(peak_cells)} | {hits} |")
+
+    models = defaultdict(lambda: defaultdict(float))
+    for r in daily:
+        for k in ("requests", "output", "cost_usd"):
+            models[r["model"]][k] += num(r, k)
+        models[r["model"]]["tokens"] += total_tokens(r)
+    out += ["", "## Model mix", "",
+            "| Model | Requests | Tokens | Output | API-equivalent cost | Share of cost |",
+            "| --- | --- | --- | --- | --- | --- |"]
+    for model, m in sorted(models.items(), key=lambda kv: -kv[1]["cost_usd"]):
+        share = f"{m['cost_usd'] / cost:.0%}" if cost else ""
+        out.append(f"| {model} | {m['requests']:,.0f} | {millions(m['tokens'])} | {millions(m['output'])} "
+                   f"| ${m['cost_usd']:,.2f} | {share} |")
+
+    days = defaultdict(lambda: defaultdict(float))
+    for r in daily:
+        days[r["date"]]["requests"] += num(r, "requests")
+        days[r["date"]]["tokens"] += total_tokens(r)
+        days[r["date"]]["cost_usd"] += num(r, "cost_usd")
+    out += ["", "## Days", "", "| Day | Requests | Tokens | API-equivalent cost |", "| --- | --- | --- | --- |"]
+    for day, t in sorted(days.items()):
+        out.append(f"| {day} | {t['requests']:,.0f} | {millions(t['tokens'])} | ${t['cost_usd']:,.2f} |")
+
+    projects = defaultdict(lambda: defaultdict(float))
+    for r in daily:
+        projects[r["project"]]["requests"] += num(r, "requests")
+        projects[r["project"]]["cost_usd"] += num(r, "cost_usd")
+    out += ["", "## Projects", "", "| Project | Requests | API-equivalent cost |", "| --- | --- | --- |"]
+    for project, p in sorted(projects.items(), key=lambda kv: -kv[1]["cost_usd"]):
+        out.append(f"| {project} | {p['requests']:,.0f} | ${p['cost_usd']:,.2f} |")
+
+    out += ["", "## Limit hits", ""]
+    if limit_list:
+        out += ["| Time | Limit | Resets | Model in use | Project | Rejected requests |",
+                "| --- | --- | --- | --- | --- | --- |"]
+        for h in limit_list:
+            out.append(f"| {when(h['time'])} | {h['limit']} | {when(h['resets_at'])} | {h['model']} "
+                       f"| {h['project']} | {h['rejected_requests']} |")
+    else:
+        out.append("None recorded this month.")
+    return "\n".join(out) + "\n"
+
+
+def update(projects_dir, out_dir, *, code_root, home, now, tz):
+    """Bring the usage files up to date with the logs. Returns the paths written."""
+    requests, limits = load(projects_dir)
+    today = now.astimezone(tz).date()
+    usage_dir = Path(out_dir) / "usage"
+    closed = [w for w in window_rows(requests, limits, tz) if datetime.fromisoformat(w["window_end"]) <= now]
+    files = [
+        ("{}.csv", DAILY_COLUMNS, "date", daily_rows(requests, tz, code_root, home)),
+        ("{}-windows.csv", WINDOW_COLUMNS, "window_start", closed),
+        ("{}-limits.csv", LIMIT_COLUMNS, "time", limit_rows(limits, tz, code_root, home)),
+    ]
+    written = []
+    for pattern, columns, key, rows in files:
+        fresh = by_month(rows, key)
+        months = set(fresh) | {p.name[:7] for p in usage_dir.glob(pattern.format("[0-9]" * 4 + "-[0-9][0-9]"))}
+        for month in sorted(months):
+            path = usage_dir / pattern.format(month)
+            rows_now = merge(read_csv(path), fresh.get(month, []), key, today)
+            if rows_now:
+                write_csv(path, columns, rows_now)
+                written.append(path)
+    for path in sorted(usage_dir.glob("[0-9]" * 4 + "-[0-9][0-9].csv")):
+        month = path.stem
+        text = summary(month, read_csv(path), read_csv(usage_dir / f"{month}-windows.csv"),
+                       read_csv(usage_dir / f"{month}-limits.csv"))
+        target = usage_dir / f"{month}-summary.md"
+        target.write_text(text)
+        written.append(target)
+    return written
+
+
+def local_zone():
+    """The machine's time zone, with its daylight-saving rules (not just today's offset)."""
+    from zoneinfo import ZoneInfo
+    name = os.environ.get("TZ") or os.path.realpath("/etc/localtime").partition("/zoneinfo/")[2]
+    try:
+        return ZoneInfo(name)
+    except Exception:
+        return datetime.now().astimezone().tzinfo
+
+
+NOTES_REMOTE = "git@github.com:ztlhayden/ai-notes.git"
+# The job's own clone, so it never touches the shared checkout's working tree or branch.
+JOB_CLONE = Path.home() / ".local/state/claude-usage/ai-notes"
+GIT_ENV = {**os.environ, "GIT_SSH_COMMAND": "ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new"}
+
+
+def git(repo, *args, timeout=60, check=True):
+    done = subprocess.run(["git", "-C", str(repo), *args], timeout=timeout,
+                          env=GIT_ENV, capture_output=True, text=True)
+    if check and done.returncode:
+        raise subprocess.CalledProcessError(done.returncode, done.args, done.stdout, done.stderr)
+    return done
+
+
+def sync(repo):
+    """Bring the job's clone up to origin's main, keeping any commit an earlier night failed to push.
+
+    If that commit no longer applies, drop it: every file it held is rebuilt from the logs.
+    """
+    if git(repo, "pull", "-q", "--rebase", "origin", "main", timeout=120, check=False).returncode:
+        git(repo, "rebase", "--abort", check=False)
+        git(repo, "fetch", "-q", "origin", timeout=120)
+        git(repo, "reset", "-q", "--hard", "origin/main")
+
+
+def push(repo, attempts=3):
+    """Push main; GitHub pushes from here sometimes stall, so time out and retry."""
+    for attempt in range(1, attempts + 1):
+        try:
+            git(repo, "push", "-q", "origin", "HEAD:main", timeout=120)
+            return
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+            print(f"push attempt {attempt} failed: {getattr(e, 'stderr', '') or e}", file=sys.stderr)
+            if attempt < attempts:
+                git(repo, "pull", "-q", "--rebase", "origin", "main", timeout=120)
+    raise SystemExit("could not push the usage record")
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    sub = parser.add_subparsers(dest="command", required=True)
+    up = sub.add_parser("update", help="record usage up to yesterday, then commit and push it")
+    up.add_argument("--repo", type=Path, default=JOB_CLONE, help=f"notes repo clone (default {JOB_CLONE})")
+    up.add_argument("--no-git", action="store_true", help="write the files only: no pull, commit or push")
+    up.add_argument("--projects", type=Path, default=Path.home() / ".claude/projects",
+                    help="Claude Code's session logs")
+    args = parser.parse_args(argv)
+
+    repo = args.repo
+    if not args.no_git:
+        if (repo / ".git").exists():
+            sync(repo)
+        else:
+            repo.parent.mkdir(parents=True, exist_ok=True)
+            subprocess.run(["git", "clone", "-q", NOTES_REMOTE, str(repo)], check=True, timeout=600, env=GIT_ENV)
+    tz = local_zone()
+    now = datetime.now(tz)
+    written = update(args.projects, repo, code_root=Path.home() / "code", home=Path.home(), now=now, tz=tz)
+    print(f"wrote {len(written)} files under {repo / 'usage'}")
+    if args.no_git:
+        return
+    git(repo, "add", "usage")
+    if git(repo, "diff", "--cached", "--quiet", check=False).returncode == 0:
+        print("no change to commit")
+        return
+    yesterday = (now.date() - timedelta(days=1)).isoformat()
+    git(repo, "commit", "-q", "-m", f"usage: record Claude Code usage through {yesterday}")
+    push(repo)
+    print("pushed")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except subprocess.CalledProcessError as e:
+        raise SystemExit(f"{' '.join(map(str, e.cmd))} failed:\n{e.stderr or ''}")
