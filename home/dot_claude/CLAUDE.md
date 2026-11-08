@@ -52,11 +52,11 @@ Shared by every project on this machine. The notes themselves are in the private
 
 ### Issue tracker
 
-Tickets are GitHub issues on the private `ztlhayden/ai-notes`; a feature is a milestone, and its spec stays a file in `~/code/ai-notes/<project>/tickets/`. Before working on an issue, read `~/.claude/skills/project-notes/issue-tracker.md`: labels, claiming, triage, blockers and the board. Features not yet moved stay markdown tickets under `tickets/` until the migration; that file covers them too, with `ticket.py` and `check-tickets.py` beside `issues.py` in `~/.claude/skills/project-notes/scripts/`.
+Tickets are GitHub issues on the private `ztlhayden/ai-notes`; a feature is a milestone, and its spec is a file in `~/code/ai-notes/<project>/tickets/<feature>/`. Before working on an issue, read `~/.claude/skills/project-notes/issue-tracker.md`: labels, claiming, triage, blockers and the board.
 
 When the user refers to a ticket, by number, link, title or feature name:
 
-- Look on GitHub first (`python3 ~/.claude/skills/project-notes/scripts/issues.py show <n>`, or `gh issue list -R ztlhayden/ai-notes --search '<words>'`), then the markdown tickets. The repo is private: read it with `gh` or the helper, never by fetching the link.
+- Look it up on GitHub (`python3 ~/.claude/skills/project-notes/scripts/issues.py show <n>`, or `gh issue list -R ztlhayden/ai-notes --search '<words>'`). The repo is private: read it with `gh` or the helper, never by fetching the link.
 - A bare `#13` names an ai-notes ticket when the user calls it a ticket or the session is in ai-notes. In a code repo it may be that repo's own issue or pull request, and "PR #41" always is. If it's unclear, check both and say which you found.
 
 `python3 ~/.claude/skills/project-notes/scripts/issues.py` keeps reads short, from any folder:
