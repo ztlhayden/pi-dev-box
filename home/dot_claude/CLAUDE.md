@@ -52,7 +52,7 @@ Shared by every project on this machine. The notes themselves are in the private
 
 ### Issue tracker
 
-Tickets are GitHub issues on the private `ztlhayden/ai-notes`; a feature is a milestone, and its spec is a file in `~/code/ai-notes/<project>/tickets/<feature>/`. Before working on an issue, read `~/.claude/skills/project-notes/issue-tracker.md`: labels, claiming, triage, blockers and the board.
+Tickets are GitHub issues on the private `ztlhayden/ai-notes`; a feature is a milestone, and its spec is a file in `~/code/ai-notes/<project>/specs/<feature>/`. Before working on an issue, read `~/.claude/skills/project-notes/issue-tracker.md`: labels, claiming, triage, blockers and the board.
 
 When the user refers to a ticket, by number, link, title or feature name:
 
