@@ -265,6 +265,36 @@ skills_repo() {
   fi
 }
 
+# A nightly record of Claude Code usage in the notes repo's usage/ folder, written by
+# ~/.local/bin/claude-usage (from the dotfiles) in its own clone of the notes repo. Cron rather
+# than a systemd user timer: this user has no linger, so its timers stop while nobody is logged in.
+USAGE_CRON='17 3 * * * PATH=/usr/local/bin:/usr/bin:/bin $HOME/.local/bin/claude-usage update >>$HOME/.local/state/claude-usage/log 2>&1 # claude-usage'
+
+usage_record() {
+  if ! has crontab; then
+    warn "crontab not found; skipping the nightly usage record"
+    return
+  fi
+  if [[ ! -x $HOME/.local/bin/claude-usage ]]; then
+    warn "claude-usage is not installed; apply the dotfiles, then re-run"
+    return
+  fi
+  mkdir -p "$HOME/.local/state/claude-usage"
+
+  local current
+  current=$(crontab -l 2>/dev/null || true)
+  if grep -qxF "$USAGE_CRON" <<<"$current"; then
+    log "Nightly usage record already scheduled"
+    return
+  fi
+  # Replace any older claude-usage line; keep every other entry as it is.
+  {
+    [[ -n $current ]] && grep -vF '# claude-usage' <<<"$current" || true
+    printf '%s\n' "$USAGE_CRON"
+  } | crontab -
+  log "Scheduled the nightly usage record at 03:17"
+}
+
 # npm here skips install scripts, so husky's `prepare` never sets a clone's hooks path, and a clone
 # moved since husky last ran keeps the old absolute path, which git skips without a word. Point each
 # clone with a husky folder at its own, absolutely, so its worktrees share it.
@@ -525,6 +555,7 @@ main() {
   ssh_key
   notes_repo
   skills_repo
+  usage_record
   repo_hooks
   claude_code
   playwright_cli
